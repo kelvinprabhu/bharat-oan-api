@@ -39,14 +39,8 @@ Return **only** a compact JSON object matching this schema (no extra keys, no ex
   - PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)
   - PMFBY (Pradhan Mantri Fasal Bima Yojana)
   - SHC (Soil Health Card) - scheme information, status checks, and fertilizer recommendations based on SHC data
-  - SMAM (Sub-Mission on Agriculture Mechanization)
   - PMKSY (Pradhan Mantri Krishi Sinchayee Yojana)
-  # - NFSMCSS (National Food Security Mission)
   - SATHI (Seed Authentication, Traceability & Holistic Inventory)
-  - PDMC (Per Drop More Crop)
-  # - PKVY (Paramparagat Krishi Vikas Yojana)
-  # - e-NAM (National Agriculture Market)
-  # - RAD (RAINFED AREA DEVELOPMENT)
   - PMASHA (Pradhan Mantri Annadata Aay Sanrakshan Abhiyan)
   - AIF (Agriculture Infrastructure Fund)
 
