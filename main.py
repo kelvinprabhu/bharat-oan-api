@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.core.cache import cache
 from contextlib import asynccontextmanager
@@ -10,6 +11,14 @@ load_dotenv()
 # Import all routers
 from app.routers import chat, transcribe, tts, health, file, token
 # from app.routers import suggestions  # Commented out: suggestion agent disabled
+
+class TimingAllowOriginMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        origin = "*" if "*" in settings.allowed_origins or not settings.allowed_origins else ", ".join(settings.allowed_origins)
+        response.headers["Timing-Allow-Origin"] = origin
+        return response
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +48,9 @@ app.add_middleware(
     allow_methods=settings.allowed_methods,
     allow_headers=settings.allowed_headers,
 )
+
+# Add Timing-Allow-Origin middleware for cross-origin timing access
+app.add_middleware(TimingAllowOriginMiddleware)
 
 
 @app.get("/")
