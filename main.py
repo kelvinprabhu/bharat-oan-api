@@ -15,7 +15,8 @@ from app.routers import chat, transcribe, tts, health, file, token
 class TimingAllowOriginMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
-        origin = "*" if "*" in settings.allowed_origins or not settings.allowed_origins else ", ".join(settings.allowed_origins)
+        # Timing-Allow-Origin accepts "*" or a single origin
+        origin = "*" if "*" in settings.allowed_origins or len(settings.allowed_origins) != 1 else settings.allowed_origins[0]
         response.headers["Timing-Allow-Origin"] = origin
         return response
 
