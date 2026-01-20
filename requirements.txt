@@ -50,6 +50,12 @@ httpx
 # aiohttp
 
 # Search and Data
+marqo  # Vector search
+rapidfuzz  # Fuzzy string matching
+
+# Cloud Services
+boto3  # AWS SDK
+google-cloud-translate  # Google Cloud Translation API
 
 # Authentication and Security
 PyJWT
@@ -59,6 +65,7 @@ cryptography
 aiocache==0.12.3
 pydantic-settings==2.9.1
 python-dateutil
+pytz  # Timezone support
 
 langcodes[data]==3.4.0
 
