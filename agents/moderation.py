@@ -12,15 +12,15 @@ load_dotenv()
 
 class QueryModerationResult(BaseModel):
     """Moderation result of the query."""
-    category: Literal["valid_schemes",
-                      "invalid_advisory_agricultural",
-                      "invalid_language",
+    category: Literal["valid_agricultural",
                       "invalid_non_agricultural",
                       "invalid_external_reference",
                       "invalid_compound_mixed",
+                      "invalid_language",
                       "unsafe_illegal",
                       "political_controversial",
-                      "role_obfuscation"] = Field(..., description="Moderation category of the user's message.")
+                      "role_obfuscation",
+                      "valid_schemes"] = Field(..., description="Moderation category of the user's message.")
     action: str = Field(..., description="Action to take on the query, always in English.")
 
     def __str__(self):
