@@ -35,7 +35,7 @@ class SearchHit(BaseModel):
 
     def __str__(self) -> str:
         if self.type == 'document':
-            return f"**{self.name}**\n" + "```\n" + self.processed_text +  "\n```\n" 
+            return f"**{self.name}**\n" + "```\n" + self.processed_text +  "\n```\n" + f"\n**Source: {self.source}**\n"
         else:
             return f"**[{self.name}]({self.source})**\n" + "```\n" + self.processed_text + "\n```\n"
 
@@ -144,3 +144,58 @@ async def search_videos(
     except Exception as e:
         logger.error(f"Error searching documents: {e} for query: {query}")
         raise ModelRetry(f"Error searching documents, please try again")
+
+
+async def search_pests_diseases(
+    query: str, 
+    top_k: int = 10, 
+) -> str:
+    """
+    Semantic search for pests and diseases information. Use this tool to search for relevant pests and diseases data.
+    
+    Args:
+        query: The search query in *English* (required)
+        top_k: Maximum number of results to return (default: 10)
+        
+    Returns:
+        search_results: Formatted list of pests and diseases information
+    """
+    try:
+        # Initialize Marqo client
+        endpoint_url = os.getenv('MARQO_ENDPOINT_URL')
+        if not endpoint_url:
+            raise ValueError("Marqo endpoint URL is required")
+        
+        # Use separate index for pests and diseases
+        index_name = os.getenv('MARQO_PESTS_DISEASES_INDEX_NAME')
+        if not index_name:
+            raise ValueError("Marqo pests and diseases index name is required.")
+        
+        client = marqo.Client(url=endpoint_url)
+        logger.info(f"Searching for pests/diseases '{query}' in index '{index_name}'")
+        
+        # Perform search
+        search_params = {
+            "q": query,
+            "limit": top_k,
+            "search_method": "hybrid",
+            "hybrid_parameters": {
+                "retrievalMethod": "disjunction",
+                "rankingMethod": "rrf",
+                "alpha": 0.5,
+                "rrfK": 60,
+            },        
+        }
+        
+        results = client.index(index_name).search(**search_params)['hits']
+        
+        if len(results) == 0:
+            return f"No pests or diseases information found for `{query}`"
+        else:            
+            search_hits = [SearchHit(**hit) for hit in results]            
+            # Convert back to dict format for compatibility
+            document_string = '\n\n----\n\n'.join([str(document) for document in search_hits])
+            return "> Pests & Diseases Search Results for `" + query + "`\n\n" + document_string
+    except Exception as e:
+        logger.error(f"Error searching pests and diseases: {e} for query: {query}")
+        raise ModelRetry(f"Error searching pests and diseases, please try again")

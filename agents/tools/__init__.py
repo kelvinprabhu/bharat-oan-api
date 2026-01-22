@@ -10,8 +10,10 @@ from agents.tools.pmkisan_scheme_status import initiate_pm_kisan_status_check, c
 from agents.tools.pmfby_scheme_status import check_pmfby_status
 from agents.tools.shc_scheme_status import check_shc_status
 from agents.tools.grievance import submit_grievance, grievance_status
+from agents.tools.terms import search_terms
 from agents.tools.search import search_documents
 from agents.tools.search import search_videos
+from agents.tools.search import search_pests_diseases
 TOOLS = [
     Tool(
         get_scheme_info,
@@ -42,11 +44,19 @@ TOOLS = [
         takes_ctx=False,
     ),
     Tool(
+        search_terms,
+        takes_ctx=False,
+    ),
+    Tool(
         search_documents,
         takes_ctx=False,
     ),
     Tool(
         search_videos,
+        takes_ctx=False,
+    ),
+    Tool(
+        search_pests_diseases,
         takes_ctx=False,
     ),
 ]
