@@ -25,7 +25,7 @@ TERM_PAIRS = [TermPair(**pair) for pair in term_pairs]
 async def search_terms(
     term: str, 
     max_results: int = 5,
-    similarity_threshold: float = 0.7,
+    threshold: float = 0.7,
     language: Language = None
 ) -> str:
     """Search for terms using fuzzy partial string matching across all fields.
@@ -33,14 +33,14 @@ async def search_terms(
     Args:
         term: The term to search for
         max_results: Maximum number of results to return
-        similarity_threshold: Minimum similarity score (0-1) to consider a match (default is 0.7)
+        threshold: Minimum similarity score (0-1) to consider a match (default is 0.7)
         language: Optional language to restrict search to (en/hi/transliteration)
         
     Returns:
         str: Formatted string with matching results and their scores
     """
-    if not 0 <= similarity_threshold <= 1:
-        raise ValueError("similarity_threshold must be between 0 and 1")
+    if not 0 <= threshold <= 1:
+        raise ValueError("threshold must be between 0 and 1")
         
     matches = []
     term = term.lower()
@@ -63,7 +63,7 @@ async def search_terms(
             tr_score = fuzz.ratio(term, term_pair.transliteration.lower()) / 100.0
             max_score = max(max_score, tr_score)
             
-        if max_score >= similarity_threshold:
+        if max_score >= threshold:
             matches.append((term_pair, max_score))
     
     # Sort by score descending
