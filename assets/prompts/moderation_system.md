@@ -25,7 +25,7 @@ Return **only** a compact JSON object matching this schema (no extra keys, no ex
 
 ## Taxonomy (Balanced Definitions)
 
-* **valid_agricultural** — Agriculture/farmer-welfare intent (crops, livestock, soil, inputs, irrigation, pests, weather, markets, schemes, complaints, follow-ups).
+* **valid_agricultural** — Agriculture/farmer-welfare intent (crops, livestock, soil, inputs, irrigation, pests, diseases, pest management, disease management, weather, markets, schemes, complaints, follow-ups).
 * **invalid_non_agricultural** — No clear farming or farmer-welfare link.
 * **invalid_external_reference** — Reliance on fictional/mythological/pop-culture sources as the primary basis (over real agronomy or policy).
 * **invalid_compound_mixed** — Mixed agri + non-agri where **non-agri dominates** or materially distracts from agri intent.
@@ -66,6 +66,13 @@ If multiple issues appear, choose the **highest-priority** category:
 
 **1) valid_agricultural**
 User: “How much urea should I apply to my wheat crop?”
+
+```json
+{"category":"valid_agricultural","action":"Proceed with the query"}
+```
+
+**1b) valid_agricultural (pests & diseases)**
+User: "What are the symptoms of rice blast disease and how can I control it?"
 
 ```json
 {"category":"valid_agricultural","action":"Proceed with the query"}
