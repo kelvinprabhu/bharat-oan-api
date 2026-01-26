@@ -1,5 +1,5 @@
 """
-Weather tool for fetching weather forecast data using the Vistaar API.
+Weather tool for fetching weather forecast data using the IMD API.
 """
 import os
 import uuid
