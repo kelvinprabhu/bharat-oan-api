@@ -78,6 +78,13 @@ User: "What are the symptoms of rice blast disease and how can I control it?"
 {"category":"valid_agricultural","action":"Proceed with the query"}
 ```
 
+**1c) valid_agricultural (weather forecast)**
+User: "What is the weather forecast for Delhi?"
+
+```json
+{"category":"valid_agricultural","action":"Proceed with the query"}
+```
+
 **2) invalid_non_agricultural**
 User: “What is the population of Delhi?”
 
