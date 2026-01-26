@@ -35,10 +35,9 @@ class SearchHit(BaseModel):
 
     def __str__(self) -> str:
         if self.type == 'document':
-            return f"**{self.name}**\n" + "```\n" + self.processed_text +  "\n```\n" + f"\n**Source: {self.source}**\n"
+            return f"**{self.name}**\n" + "```\n" + self.processed_text +  "\n```\n" 
         else:
             return f"**[{self.name}]({self.source})**\n" + "```\n" + self.processed_text + "\n```\n"
-
 
 async def search_documents(
     query: str, 
