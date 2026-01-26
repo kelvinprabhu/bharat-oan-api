@@ -3,7 +3,6 @@ Tools for the BharatVistaar AI Agent.
 """
 #from agents.tools.common import reasoning_tool, planning_tool
 # from agents.tools.search_beckn import search_documents
-# from agents.tools.maps import reverse_geocode, forward_geocode  
 from pydantic_ai import Tool
 from agents.tools.scheme_info import get_scheme_info
 from agents.tools.pmkisan_scheme_status import initiate_pm_kisan_status_check, check_pm_kisan_status_with_otp
@@ -14,6 +13,9 @@ from agents.tools.terms import search_terms
 from agents.tools.search import search_documents
 from agents.tools.search import search_videos
 from agents.tools.search import search_pests_diseases
+from agents.tools.weather import weather_forecast
+from agents.tools.maps import reverse_geocode, forward_geocode
+
 TOOLS = [
     Tool(
         get_scheme_info,
@@ -57,6 +59,18 @@ TOOLS = [
     ),
     Tool(
         search_pests_diseases,
+        takes_ctx=False,
+    ),
+    Tool(
+        weather_forecast,
+        takes_ctx=False,
+    ),
+    Tool(
+        forward_geocode,
+        takes_ctx=False,
+    ),
+    Tool(
+        reverse_geocode,
         takes_ctx=False,
     ),
 ]
