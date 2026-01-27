@@ -366,12 +366,11 @@ async def weather_forecast(latitude: float, longitude: float) -> str:
         if not bap_endpoint:
             logger.error("BAP_ENDPOINT is not set")
             return "Weather service configuration error. BAP_ENDPOINT is not set."
-        
-        search_endpoint = bap_endpoint.rstrip("/") + "/search"
+        search_url = bap_endpoint.rstrip("/") + "/search"
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                search_endpoint,
+                search_url,
                 json=payload,
                 timeout=15.0
             )
