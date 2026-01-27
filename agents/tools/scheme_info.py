@@ -156,7 +156,7 @@ class SchemeResponse(BaseModel):
     
     def __str__(self) -> str:
         lines = []
-        
+        logger.info(f"SchemeResponse: {self.responses}")
         has_scheme_data = self._has_scheme_data()
         if not self.responses or not has_scheme_data:
             lines.append("No scheme data found.")
@@ -261,11 +261,15 @@ def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "sh
         # Convert None to empty string for the API request
         scheme_name_str = scheme_name or ""
         payload = SchemeRequest(scheme_name=scheme_name_str).get_payload()
+        logger.info(f"SchemeName: {scheme_name_str}")
+        logger.info(f"BAP_ENDPOINT: {os.getenv('BAP_ENDPOINT')}")
+        logger.info(f"Payload: {payload}")
         response = httpx.post(
             os.getenv("BAP_ENDPOINT").rstrip("/") + "/search",
             json=payload,
             timeout=httpx.Timeout(20.0, read=30.0)
         )
+        logger.info(f"SchemeResponse: {response.json()}")
         
         if response.status_code != 200:
             logger.error(f"Scheme API returned status code {response.status_code}")
