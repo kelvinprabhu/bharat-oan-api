@@ -60,7 +60,7 @@ def transcribe_bhashini(audio_base64: str, source_lang: str):
 
     Parameters:
     audio_base64 (str): Base64 encoded audio content
-    source_lang (str): The language code of the audio file's language (required, e.g., 'hi', 'en', 'mr').
+    source_lang (str): The language code of the audio file's language (required, e.g., 'hi', 'en').
 
     Returns:
     str: The transcribed text if the request is successful.
@@ -78,7 +78,7 @@ def transcribe_bhashini(audio_base64: str, source_lang: str):
             {
                 "taskType": "asr",
                 "config": {
-                    # "serviceId": "bhashini/ai4bharat/conformer-multilingual-asr",
+                    "serviceId": "bhashini/ai4bharat/conformer-multilingual-asr",
                     "language": {
                         "sourceLanguage": source_lang,
                     },
@@ -137,10 +137,5 @@ def detect_audio_language_bhashini(audio_base64: str):
     response_json = response.json()
     detected_language_code = response_json['pipelineResponse'][0]['output'][0]['langPrediction'][0]['langCode']
 
-    # Support English, Hindi, and Marathi
-    if detected_language_code == 'en':
-        return 'en'
-    elif detected_language_code == 'mr':
-        return 'mr'
-    else:
-        return 'hi'  # Default to Hindi for other languages
+    # NOTE: Keeping only English and Hindi for now
+    return 'en' if detected_language_code == 'en' else 'hi'
