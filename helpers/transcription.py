@@ -119,7 +119,7 @@ def detect_audio_language_bhashini(audio_base64: str):
             {
                 "taskType": "audio-lang-detection",
                 "config": {
-                    "serviceId": "bhashini/iitmandi/audio-lang-detection/gpu",
+                    # "serviceId": "bhashini/iitmandi/audio-lang-detection/gpu",
                     "language": {
                         "sourceLanguage": "auto"
                     },
