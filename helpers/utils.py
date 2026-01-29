@@ -7,7 +7,6 @@ import logging
 import boto3
 from dotenv import load_dotenv
 import base64
-import tiktoken
 import unicodedata as ud
 from datetime import datetime
 import simplejson as json
@@ -15,11 +14,6 @@ from jinja2 import Environment, FileSystemLoader
 import pytz
 
 load_dotenv()
-
-
-ENCODER = tiktoken.get_encoding(os.getenv("TIKTOKEN_ENCODING", "cl100k_base"))
-
-
 
 
 def get_today_date_str() -> str:
@@ -39,39 +33,6 @@ def get_logger(name):
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     return logger
-
-def count_tokens_str(doc: str) -> int:
-    """Count tokens in a string.
-
-    Args:
-        doc (str): String to count tokens for.
-    Returns:
-        int: number of tokens in the string
-
-    """
-    return len(ENCODER.encode(doc, disallowed_special=()))
-
-
-def count_tokens_for_part(part) -> int:
-    """Count tokens for a message part, handling different part types appropriately.
-    
-    Args:
-        part: A message part (TextPart, ToolCallPart, etc.)
-    Returns:
-        int: number of tokens in the part
-    """
-    if hasattr(part, 'content'):
-        return count_tokens_str(str(part.content))
-    elif hasattr(part, 'part_kind') and part.part_kind == 'tool-call':
-        # For tool calls, create a string representation of the tool name and args
-        tool_str = f"tool: {part.tool_name}, args: {json.dumps(part.args)}"
-        return count_tokens_str(tool_str)
-    elif hasattr(part, 'part_kind') and part.part_kind == 'tool-return':
-        # For tool returns, use the result content
-        return count_tokens_str(str(part.content))
-    else:
-        # For unknown part types, return 0 tokens
-        return 0
 
 
 
@@ -234,4 +195,4 @@ def load_json_data(filename: str) -> List[Dict]:
     except json.JSONDecodeError as e:
         logger = get_logger(__name__)
         logger.error(f"Error parsing JSON file {filename}: {e}")
-        return []
+        return 
