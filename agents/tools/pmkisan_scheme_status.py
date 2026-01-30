@@ -461,11 +461,18 @@ def initiate_pm_kisan_status_check(ctx: RunContext[FarmerContext], reg_no: str) 
             # NOTE: Adding registration number as well - in case a person checks status for multiple farmers
         ).get_payload()
         
+        endpoint = os.getenv("BAP_ENDPOINT").rstrip("/") + "/init"
+        logger.info(f"[PM KISAN INIT] Request URL: {endpoint}")
+        logger.info(f"[PM KISAN INIT] Request Payload: {json.dumps(payload, indent=2)}")
+        
         response = httpx.post(
-            os.getenv("BAP_ENDPOINT").rstrip("/") + "/init",
+            endpoint,
             json=payload,
             timeout=httpx.Timeout(10.0, read=15.0)
         )
+        
+        logger.info(f"[PM KISAN INIT] Response Status: {response.status_code}")
+        logger.info(f"[PM KISAN INIT] Response Payload: {response.text}")
         
         if response.status_code != 200:
             logger.error(f"Scheme init API returned status code {response.status_code}")
@@ -525,11 +532,18 @@ def check_pm_kisan_status_with_otp(ctx: RunContext[FarmerContext], otp: str, reg
                                       registration_number=reg_no,
                                       ).get_payload()
         
+        endpoint = os.getenv("BAP_ENDPOINT").rstrip("/") + "/status"
+        logger.info(f"[PM KISAN STATUS] Request URL: {endpoint}")
+        logger.info(f"[PM KISAN STATUS] Request Payload: {json.dumps(payload, indent=2)}")
+        
         response = httpx.post(
-            os.getenv("BAP_ENDPOINT").rstrip("/") + "/status",
+            endpoint,
             json=payload,
             timeout=httpx.Timeout(10.0, read=15.0)
         )
+        
+        logger.info(f"[PM KISAN STATUS] Response Status: {response.status_code}")
+        logger.info(f"[PM KISAN STATUS] Response Payload: {response.text}")
         
         if response.status_code != 200:
             logger.error(f"Scheme status API returned status code {response.status_code}")

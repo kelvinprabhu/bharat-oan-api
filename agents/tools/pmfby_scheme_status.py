@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime, timezone
 from helpers.utils import get_logger
 import httpx
@@ -453,11 +454,18 @@ def check_pmfby_status(
             phone_number=phone_number
         ).get_payload()
         
+        endpoint = os.getenv("BAP_ENDPOINT").rstrip("/") + "/init"
+        logger.info(f"[PMFBY] Request URL: {endpoint}")
+        logger.info(f"[PMFBY] Request Payload: {json.dumps(payload, indent=2)}")
+        
         response = httpx.post(
-            os.getenv("BAP_ENDPOINT").rstrip("/") + "/init",
+            endpoint,
             json=payload,
             timeout=httpx.Timeout(10.0, read=15.0)
         )
+        
+        logger.info(f"[PMFBY] Response Status: {response.status_code}")
+        logger.info(f"[PMFBY] Response Payload: {response.text}")
         
         if response.status_code != 200:
             logger.error(f"PFMBY status API returned status code {response.status_code}")
