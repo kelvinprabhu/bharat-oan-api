@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 import hashlib
 import time
 import random
@@ -17,6 +17,7 @@ class EventType(str, Enum):
     OE_MEDIA = "OE_MEDIA"
     OE_TRANSLATION = "OE_TRANSLATION"
     OE_MODERATION = "OE_MODERATION"
+
 
 
 class PData(BaseModel):
@@ -39,6 +40,8 @@ class Target(BaseModel):
     type: str
     parent: Optional[Dict[str, str]] = None
     questionsDetails: Optional[Dict[str, Any]] = None
+    ttsResponseDetails: Optional[Dict[str, Any]] = None
+    asrResponseDetails: Optional[Dict[str, Any]] = None
 
 
 class BaseEventData(BaseModel):
@@ -100,6 +103,12 @@ class ModerationEventEks(BaseEventData):
     # reason: Optional[str] = None
 
 
+class ApiCallEventEks(BaseEventData):
+    """Extended data for OE_API_CALL events"""
+    target: Target
+    type: str
+
+
 class EData(BaseModel):
     """Event specific data"""
     eks: Union[Dict[str, Any], BaseEventData]
@@ -107,7 +116,7 @@ class EData(BaseModel):
 
 class TelemetryEvent(BaseModel):
     """Individual telemetry event"""
-    eid: EventType
+    eid: Union[EventType, str]
     ver: str = "2.2"
     mid: str = ""
     ets: int = Field(default_factory=lambda: int(datetime.now().timestamp() * 1000))
@@ -127,6 +136,13 @@ class TelemetryEvent(BaseModel):
             random_str = f"{time.time()}{random.random()}"
             values["mid"] = f"OE_{hashlib.md5(random_str.encode()).hexdigest()}"
         return values
+    
+    @field_serializer("eid")
+    def serialize_eid(self, eid: Union[EventType, str]) -> str:
+        """Serialize eid to string value"""
+        if isinstance(eid, EventType):
+            return eid.value
+        return eid
 
 
 class TelemetryRequest(BaseModel):
@@ -143,10 +159,10 @@ def create_event(
     event_type: EventType,
     event_data: Union[Dict[str, Any], BaseEventData],
     uid: str,
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "default-email",
     sid: str = "",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -189,9 +205,9 @@ def create_event(
 
 def create_start_event(
     uid: str,
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "default-email",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -217,9 +233,9 @@ def create_item_response_event(
     question_text: str,
     session_id: str,
     type: str = "CHOOSE",
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "default-email",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -262,9 +278,9 @@ def create_end_event(
     progress: int,
     length: float,
     session_id: str = "",
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "default-email",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -295,9 +311,9 @@ def create_audio_upload_event(
     bucket_name: str,
     file_key: str,
     uid: str = "system",
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "system",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -337,9 +353,9 @@ def create_translation_event(
     translation_service: str,
     success: bool = True,
     uid: str = "system",
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "system",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -395,9 +411,9 @@ def create_moderation_event(
     category: Optional[str] = None,
     action: Optional[str] = None,
     uid: str = "system",
-    channel: str = "MahaVistaar",
+    channel: str = "BharatVistaar",
     did: str = "system",
-    pdata_id: str = "MahaVistaar",
+    pdata_id: str = "BharatVistaar",
     pdata_ver: str = "v0.1",
     gdata_id: str = "content_id",
     gdata_ver: str = "content_ver",
@@ -444,6 +460,140 @@ def create_moderation_event(
         timestamp=timestamp
     )
 
+def create_tts_event(
+    success: bool,
+    latency_ms: float,
+    status_code: Optional[int] = None,
+    error_code: Optional[str] = None,
+    error_message: Optional[str] = None,
+    language: Optional[str] = None,
+    session_id: str = "",
+    text: Optional[str] = None,
+    qid: Optional[str] = None,
+    uid: str = "system",
+    channel: str = "BharatVistaar",
+    did: str = "system",
+    pdata_id: str = "BharatVistaar",
+    pdata_ver: str = "v0.1",
+    gdata_id: str = "content_id",
+    gdata_ver: str = "content_ver",
+    timestamp: Optional[int] = None,
+) -> TelemetryEvent:
+    """Creates a TTS event for telemetry."""
+    tts_response_details = {
+        "apiType": "TTS",
+        "apiService": "bhashini",
+        "success": success,
+        "latencyMs": latency_ms,
+        "statusCode": status_code,
+        "errorCode": error_code,
+        "errorMessage": error_message,
+        "language": language,
+        "sessionId": session_id,
+        **({"text": text} if text else {}),
+        **({"qid": qid} if qid else {})
+    }
+    
+    questions_details = {
+        **({"text": text} if text else {}),
+        **({"qid": qid} if qid else {})
+    }
+    
+    target = Target(
+        id="bhashini_api",
+        ver="v1.0",
+        type="API_CALL",
+        parent={"id": "bhashini", "type": "external_service"},
+        ttsResponseDetails=tts_response_details,
+        questionsDetails=questions_details if questions_details else None
+    )
+    
+    return create_event(
+        event_type=EventType.OE_ITEM_RESPONSE,
+        event_data=ItemResponseEks(
+            target=target,
+            qid=qid or f"tts_{session_id}",
+            type="BHASHINI_TTS",
+            state=""
+        ),
+        uid=uid,
+        sid=session_id,
+        channel=channel,
+        did=did,
+        pdata_id=pdata_id,
+        pdata_ver=pdata_ver,
+        gdata_id=gdata_id,
+        gdata_ver=gdata_ver,
+        timestamp=timestamp
+    )
+
+
+def create_asr_event(
+    success: bool,
+    latency_ms: float,
+    status_code: Optional[int] = None,
+    error_code: Optional[str] = None,
+    error_message: Optional[str] = None,
+    language: Optional[str] = None,
+    session_id: str = "",
+    text: Optional[str] = None,
+    qid: Optional[str] = None,
+    uid: str = "system",
+    channel: str = "BharatVistaar",
+    did: str = "system",
+    pdata_id: str = "BharatVistaar",
+    pdata_ver: str = "v0.1",
+    gdata_id: str = "content_id",
+    gdata_ver: str = "content_ver",
+    timestamp: Optional[int] = None,
+) -> TelemetryEvent:
+    """Creates an ASR event for telemetry."""
+    asr_response_details = {
+        "apiType": "ASR",
+        "apiService": "bhashini",
+        "success": success,
+        "latencyMs": latency_ms,
+        "statusCode": status_code,
+        "errorCode": error_code,
+        "errorMessage": error_message,
+        "language": language,
+        "sessionId": session_id,
+        **({"text": text} if text else {}),
+        **({"qid": qid} if qid else {})
+    }
+    
+    questions_details = {
+        **({"text": text} if text else {}),
+        **({"qid": qid} if qid else {})
+    }
+    
+    target = Target(
+        id="bhashini_api",
+        ver="v1.0",
+        type="API_CALL",
+        parent={"id": "bhashini", "type": "external_service"},
+        asrResponseDetails=asr_response_details,
+        questionsDetails=questions_details if questions_details else None
+    )
+    
+    return create_event(
+        event_type=EventType.OE_ITEM_RESPONSE,
+        event_data=ItemResponseEks(
+            target=target,
+            qid=qid or f"asr_{session_id}",
+            type="BHASHINI_ASR",
+            state=""
+        ),
+        uid=uid,
+        sid=session_id,
+        channel=channel,
+        did=did,
+        pdata_id=pdata_id,
+        pdata_ver=pdata_ver,
+        gdata_id=gdata_id,
+        gdata_ver=gdata_ver,
+        timestamp=timestamp
+    )
 # TODO: Directly call the task isntead of this
 # def log_audio_upload(
 #     session_id: str,
@@ -456,5 +606,7 @@ def create_moderation_event(
 #     """Logs an audio upload to telemetry"""
     
 #     return send_telemetry.s(request=telemetry_request.model_dump()).apply_async()
+
+
 
 

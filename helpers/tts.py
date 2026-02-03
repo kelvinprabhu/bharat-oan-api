@@ -38,7 +38,12 @@ def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_ra
             ]
         }
     }
-    response = httpx.post(url, headers=headers, json=data)
+    response = httpx.post(
+        url, 
+        headers=headers, 
+        json=data,
+        timeout=httpx.Timeout(30.0, read=60.0)
+    )
     assert response.status_code == 200, f"Error: {response.status_code} {response.text}"
     response_json = response.json()
 
