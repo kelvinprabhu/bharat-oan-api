@@ -1,53 +1,29 @@
-"""
-Tasks for sending telemetry data.
-"""
-import os
-from dotenv import load_dotenv
 from typing import Dict
 import httpx
-from fastapi import BackgroundTasks
-from helpers.utils import get_logger
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+from app.config import settings
 
-load_dotenv()
-
-logger = get_logger(__name__)
-
-# TODO: Make sure env has correct value
-TELEMETRY_API_URL = os.getenv("TELEMETRY_API_URL", "https://vistaar.kenpath.ai/observability-service/action/data/v3/telemetry")
-
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(1),
+    retry=retry_if_exception_type((httpx.TimeoutException, httpx.RequestError)),
+    reraise=True
+)
 async def send_telemetry(telemetry_data: Dict) -> Dict:
-    """
-    Background task to send telemetry events to the API.
-    
-    Args:
-        telemetry_data: The telemetry data to send
-        
-    Returns:
-        Dict containing status code and response
-    """
-    headers = {
-        "Accept": "*/*",
-        "Content-Type": "application/json", 
-        "X-Requested-With": "XMLHttpRequest",
-        "dataType": "json"
-    }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                TELEMETRY_API_URL,
-                headers=headers,
-                json=telemetry_data,
-                timeout=httpx.Timeout(30.0, read=60.0)
-            )
-            
-            result = {
-                "status_code": response.status_code,
-                "response": response.json() if response.status_code == 200 else response.text
-            }
-            logger.info(f"Telemetry sent successfully: {result}")
-            return result
-        
-    except Exception as e:
-        logger.error(f"Error sending telemetry: {str(e)}")
-        return {"error": str(e)} 
+    """Background task to send telemetry events to the API."""
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            settings.telemetry_api_url,
+            headers={
+                "Accept": "*/*",
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "dataType": "json"
+            },
+            json=telemetry_data,
+            timeout=httpx.Timeout(30.0, read=60.0)
+        )
+        return {
+            "status_code": response.status_code,
+            "response": response.json() if response.status_code == 200 else response.text
+        } 
