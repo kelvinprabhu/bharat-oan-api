@@ -18,7 +18,7 @@ pydantic
 tenacity
 
 # Logfire
-logfire
+# logfire
 gevent>=22.10.0
 
 # Redis for caching and stuff
