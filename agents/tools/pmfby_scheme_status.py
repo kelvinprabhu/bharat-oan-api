@@ -1,7 +1,8 @@
 import uuid
+import json
 from datetime import datetime, timezone
 from helpers.utils import get_logger
-import requests
+import httpx
 from pydantic import BaseModel, AnyHttpUrl
 from typing import List, Optional, Dict, Any, Literal, ClassVar
 from pydantic_ai import ModelRetry, UnexpectedModelBehavior
@@ -258,6 +259,10 @@ class Context(BaseModel):
     bpp_uri: Optional[AnyHttpUrl] = None
     country: Optional[str] = None
     city: Optional[str] = None
+    location: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = "allow"
 
 class ResponseItem(BaseModel):
     context: Context
@@ -326,17 +331,17 @@ class PMfbyStatusRequest(BaseModel):
     """PMfbyStatusRequest model for checking PFMBY scheme status.
     
     Args:
-        inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status'
-        year (str): Year for which status is requested
-        season (str): Season for which status is requested:
+        inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status' (required)
+        year (str): Year for which status is requested (required)
+        season (str): Season for which status is requested (required):
             - "Kharif" - Kharif season
             - "Rabi" - Rabi season
             - "Summer" - Summer season
         phone_number (str): Phone number registered with the scheme (required)
     """
-    inquiry_type: Literal["policy_status", "claim_status"] = "policy_status"
-    year: str = "2023" 
-    season: Literal["Kharif", "Rabi", "Summer"] = "Rabi" 
+    inquiry_type: Literal["policy_status", "claim_status"]  # Required field, no default
+    year: str  # Required field, no default
+    season: Literal["Kharif", "Rabi", "Summer"]  # Required field, no default
     phone_number: str  # Required field, no default
     
     def get_payload(self) -> Dict[str, Any]:
@@ -346,7 +351,9 @@ class PMfbyStatusRequest(BaseModel):
         Returns:
             Dict[str, Any]: The dictionary representation of the PMfbyStatusRequest object
         """
-        now = datetime.today()
+        now = datetime.now(timezone.utc)
+        # Convert to Unix timestamp (seconds since epoch) as string
+        unix_timestamp = str(int(now.timestamp()))
         
         return {
             "context": {
@@ -359,7 +366,16 @@ class PMfbyStatusRequest(BaseModel):
                 "bpp_uri": os.getenv("BPP_URI"),
                 "transaction_id": str(uuid.uuid4()),
                 "message_id": str(uuid.uuid4()),
-                "timestamp": now.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                "timestamp": unix_timestamp,
+                "ttl": "PT10M",
+                "location": {
+                    "country": {
+                        "code": "IND"
+                    },
+                    "city": {
+                        "code": "*"
+                    }
+                }
             },
             "message": {
                 "order": {
@@ -412,19 +428,20 @@ class PMfbyStatusRequest(BaseModel):
 
 def check_pmfby_status(
     phone_number: str,
-    inquiry_type: Literal["policy_status", "claim_status"] = "policy_status",
-    year: str = "2023", 
-    season: Literal["Kharif", "Rabi", "Summer"] = "Rabi"  
+    inquiry_type: Literal["policy_status", "claim_status"],
+    year: str,
+    season: Literal["Kharif", "Rabi", "Summer"]
 ) -> str:
     """Check PFMBY scheme status (policy or claim).
     
     Use this tool to check either policy status or claim status for a farmer's PFMBY scheme.
+    You must ask the user for inquiry_type, year, season, and phone_number if not provided.
     
     Args:
-        phone_number (str): Phone number registered with the scheme
-        inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status'
-        year (str): Year for which status is requested, defaults to `2023`
-        season (str): Season for which status is requested, defaults to `Rabi`
+        phone_number (str): Phone number registered with the scheme (required)
+        inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status' (required). You must ask the user which type of inquiry they want.
+        year (str): Year for which status is requested (required). You must ask the user for the year.
+        season (str): Season for which status is requested (required). You must ask the user for the season (Kharif, Rabi, or Summer).
     
     Returns:
         str: Detailed scheme status information based on the inquiry type
@@ -437,11 +454,18 @@ def check_pmfby_status(
             phone_number=phone_number
         ).get_payload()
         
-        response = requests.post(
-            os.getenv("BAP_INIT_ENDPOINT"),
+        endpoint = os.getenv("BAP_ENDPOINT").rstrip("/") + "/init"
+        logger.info(f"[PMFBY] Request URL: {endpoint}")
+        logger.info(f"[PMFBY] Request Payload: {json.dumps(payload, indent=2)}")
+        
+        response = httpx.post(
+            endpoint,
             json=payload,
-            timeout=(10, 15)
+            timeout=httpx.Timeout(10.0, read=15.0)
         )
+        
+        logger.info(f"[PMFBY] Response Status: {response.status_code}")
+        logger.info(f"[PMFBY] Response Payload: {response.text}")
         
         if response.status_code != 200:
             logger.error(f"PFMBY status API returned status code {response.status_code}")
@@ -450,11 +474,11 @@ def check_pmfby_status(
         scheme_response = StatusResponse.model_validate(response.json())
         return str(scheme_response)
                 
-    except requests.Timeout as e:
+    except httpx.TimeoutException as e:
         logger.error(f"PFMBY status API request timed out: {str(e)}")
         return "PFMBY status request timed out. Please try again later."
     
-    except requests.RequestException as e:
+    except httpx.RequestError as e:
         logger.error(f"PFMBY status API request failed: {e}")
         return f"PFMBY status request failed: {str(e)}"
     

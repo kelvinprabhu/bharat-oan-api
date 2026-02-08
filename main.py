@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.core.cache import cache
 from contextlib import asynccontextmanager
@@ -8,7 +9,17 @@ from contextlib import asynccontextmanager
 load_dotenv()
 
 # Import all routers
-from app.routers import chat, transcribe, suggestions, tts, health, file
+from app.routers import chat, transcribe, tts, health, file, token
+# from app.routers import suggestions  # Commented out: suggestion agent disabled
+
+class TimingAllowOriginMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # Timing-Allow-Origin accepts "*" or a single origin
+        origin = "*" if "*" in settings.allowed_origins or len(settings.allowed_origins) != 1 else settings.allowed_origins[0]
+        response.headers["Timing-Allow-Origin"] = origin
+        return response
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +50,9 @@ app.add_middleware(
     allow_headers=settings.allowed_headers,
 )
 
+# Add Timing-Allow-Origin middleware for cross-origin timing access
+app.add_middleware(TimingAllowOriginMiddleware)
+
 
 @app.get("/")
 async def root():
@@ -53,7 +67,8 @@ async def root():
 # Include all routers with API prefix from settings
 app.include_router(chat.router, prefix=settings.api_prefix)
 app.include_router(transcribe.router, prefix=settings.api_prefix)
-app.include_router(suggestions.router, prefix=settings.api_prefix)
+# app.include_router(suggestions.router, prefix=settings.api_prefix)  # Commented out: suggestion agent disabled
 app.include_router(tts.router, prefix=settings.api_prefix)
 app.include_router(health.router, prefix=settings.api_prefix)
-app.include_router(file.router, prefix=settings.api_prefix) 
+app.include_router(file.router, prefix=settings.api_prefix)
+app.include_router(token.router, prefix=settings.api_prefix) 

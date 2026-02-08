@@ -1,44 +1,30 @@
 import os
-from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIChatModel
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from pydantic_ai.models.openai import OpenAIResponsesModelSettings
+from pydantic_ai.models.fallback import FallbackModel
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get configurations from environment variables
-LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'openai').lower()
-LLM_MODEL_NAME = os.getenv('LLM_MODEL_NAME', 'gpt-4.1-nano')
+# Agrinet Model
+LLM_AGRINET_MODEL = OpenAIChatModel(
+    os.getenv('LLM_AGRINET_MODEL_NAME', 'agrinet-model'),
+    provider=OpenAIProvider(
+        base_url=os.getenv('VLLM_AGRINET_MODEL_URL'),
+        api_key="not-needed",
+    ),
+)
 
-if LLM_PROVIDER == 'openai':
-    LLM_MODEL = (
-        OpenAIChatModel(        
-            LLM_MODEL_NAME,
-            provider=OpenAIProvider(
-                api_key=os.getenv('OPENAI_API_KEY'),
-            ),
-        )
-    )
+# Moderation Model
+LLM_MODERATION_BASE_MODEL = OpenAIChatModel(
+    os.getenv('LLM_MODERATION_MODEL_NAME', 'moderation-model'),
+    provider=OpenAIProvider(
+        base_url=os.getenv('VLLM_MODERATION_MODEL_URL'),
+        api_key="not-needed",
+    ),
+)
 
-
-# GPT-OSS Models
-
-if LLM_PROVIDER == 'vllm':
-    if LLM_MODEL_NAME in ['gpt-oss-20b', 'gpt-oss-120b']:
-       LLM_MODEL = OpenAIChatModel(
-        LLM_MODEL_NAME,
-        provider=OpenAIProvider(
-            base_url=os.getenv('VLLM_BASE_URL'), 
-            api_key="not-needed"
-        ),
-       )
-    else:
-        LLM_MODEL = OpenAIChatModel(
-            LLM_MODEL_NAME,
-            provider=OpenAIProvider(
-                base_url=os.getenv('VLLM_BASE_URL'), 
-                api_key="not-needed"
-            ),
-        )
-else:
-    raise ValueError(f"Invalid LLM_PROVIDER: {LLM_PROVIDER}. Must be one of: 'openai', 'vllm'")
+# TODO: for production, we uncomment this and comment the line below
+# Moderation Fallback: tries moderation model first, falls back to agrinet model
+# LLM_MODERATION_MODEL = FallbackModel(LLM_MODERATION_BASE_MODEL, LLM_AGRINET_MODEL)
+LLM_MODERATION_MODEL = LLM_MODERATION_BASE_MODEL

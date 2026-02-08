@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # External Service URLs
-    telemetry_api_url: str = "https://vistaar.kenpath.ai/observability-service/action/data/v3/telemetry"
+    telemetry_api_url: str = os.getenv("TELEMETRY_API_URL", "https://dev-vistaar.da.gov.in/observability-service/action/data/v3/telemetry")
     bhashini_api_url: str = ""
     ollama_endpoint_url: Optional[str] = None
     marqo_endpoint_url: Optional[str] = None
@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     llm_provider: Optional[str] = None
     llm_model_name: Optional[str] = None
     marqo_index_name: Optional[str] = None
+    marqo_pests_diseases_index_name: Optional[str] = None
 
     class Config:
         env_file = ".env"

@@ -1,16 +1,16 @@
 import os
 from pydantic_ai import Agent, RunContext
 from helpers.utils import get_prompt, get_today_date_str
-from agents.models import LLM_MODEL
+from agents.models import LLM_AGRINET_MODEL
 from agents.tools import TOOLS
 from pydantic_ai.settings import ModelSettings
 from agents.deps import FarmerContext
 
 
 agrinet_agent = Agent(
-    model=LLM_MODEL,
+    model=LLM_AGRINET_MODEL,
     name="Vistaar Agent",
-    instrument=True,
+    instrument=False,
     output_type=str,
     deps_type=FarmerContext,
     retries=3,
@@ -20,7 +20,7 @@ agrinet_agent = Agent(
         temperature=1.0,
         max_tokens=10240,
         top_p=1.0,
-        top_k=0,
+        top_k=100,
         parallel_tool_calls=True,  
         openai_reasoning_effort='medium',  
         openai_send_reasoning_ids=False,

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from helpers.utils import get_logger
-import requests
+import httpx
 from pydantic import BaseModel, AnyHttpUrl, Field
 from typing import List, Optional, Dict, Any, Literal
 from pydantic_ai import ModelRetry, UnexpectedModelBehavior
@@ -156,7 +156,7 @@ class SchemeResponse(BaseModel):
     
     def __str__(self) -> str:
         lines = []
-        
+        logger.info(f"SchemeResponse: {self.responses}")
         has_scheme_data = self._has_scheme_data()
         if not self.responses or not has_scheme_data:
             lines.append("No scheme data found.")
@@ -179,14 +179,8 @@ class SchemeRequest(BaseModel):
              - "pmkisan": Pradhan Mantri Kisan Samman Nidhi scheme  
              - "pmfby": Pradhan Mantri Fasal Bima Yojana scheme
              - "shc": Soil Health Card scheme
-             - "smam": Sub-Mission on Agriculture Mechanization
              - "pmksy": The Pradhan Mantri Krishi Sinchayee Yojana
-             - "nfsmcss": National Food Security Mission
              - "sathi": SATHI Seed Authentication, Traceability & Holistic Inventory
-             - "pdmc": Per Drop More Crop scheme
-             - "pkvy": Paramparagat Krishi Vikas Yojana
-             - "e-nam": National Agriculture Market
-             - "rad": RAINFED AREA DEVELOPMENT
              - "pmasha": Pradhan Mantri Annadata Aay Sanrakshan Abhiyan
              - "aif": Agriculture Infrastructure Fund
              - None: Retrieve all available schemes
@@ -204,7 +198,7 @@ class SchemeRequest(BaseModel):
         
         return {
             "context": {
-                "domain": "schemes:oan",
+                "domain": "schemes:vistaar",
                 "action": "search",
                 "version": "1.1.0",
                 "bap_id": os.getenv("BAP_ID"),
@@ -213,7 +207,16 @@ class SchemeRequest(BaseModel):
                 "bpp_uri": os.getenv("BPP_URI"),
                 "message_id": str(uuid.uuid4()),
                 "transaction_id": str(uuid.uuid4()),
-                "timestamp": now.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                "timestamp": now.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
+                "ttl": "PT10M",
+                "location": {
+                    "country": {
+                        "code": "IND"
+                    },
+                    "city": {
+                        "code": "*"
+                    }
+                }
             },
             "message": {
                 "intent": {
@@ -231,7 +234,7 @@ class SchemeRequest(BaseModel):
             }
         }
 
-def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "shc", "smam", "pmksy", "nfsmcss", "sathi", "pdmc", "pkvy", "e-nam", "rad", "pmasha", "aif"]] = None) -> str:
+def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "shc", "pmksy", "sathi", "pmasha", "aif"]] = None) -> str:
     """Retrieve detailed information about government agricultural schemes.
     
     This tool fetches comprehensive scheme data including benefits, eligibility criteria, 
@@ -244,14 +247,8 @@ def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "sh
             - "pmkisan": Pradhan Mantri Kisan Samman Nidhi scheme  
             - "pmfby": Pradhan Mantri Fasal Bima Yojana scheme
             - "shc": Soil Health Card scheme
-            - "smam": Sub-Mission on Agriculture Mechanization
             - "pmksy": The Pradhan Mantri Krishi Sinchayee Yojana
-            - "nfsmcss": National Food Security Mission
             - "sathi": Seed Authentication, Traceability & Holistic Inventory
-            - "pdmc": Per Drop More Crop scheme
-            - "pkvy": Paramparagat Krishi Vikas Yojana
-            - "e-nam": National Agriculture Market
-            - "rad": RAINFED AREA DEVELOPMENT
             - "pmasha": Pradhan Mantri Annadata Aay Sanrakshan Abhiyan
             - "aif": Agriculture Infrastructure Fund
             - None: Retrieve all available schemes
@@ -264,11 +261,15 @@ def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "sh
         # Convert None to empty string for the API request
         scheme_name_str = scheme_name or ""
         payload = SchemeRequest(scheme_name=scheme_name_str).get_payload()
-        response = requests.post(
-            os.getenv("BAP_ENDPOINT"),
+        logger.info(f"SchemeName: {scheme_name_str}")
+        logger.info(f"BAP_ENDPOINT: {os.getenv('BAP_ENDPOINT')}")
+        logger.info(f"Payload: {payload}")
+        response = httpx.post(
+            os.getenv("BAP_ENDPOINT").rstrip("/") + "/search",
             json=payload,
-            timeout=(20, 30)
+            timeout=httpx.Timeout(20.0, read=30.0)
         )
+        logger.info(f"SchemeResponse: {response.json()}")
         
         if response.status_code != 200:
             logger.error(f"Scheme API returned status code {response.status_code}")
@@ -277,11 +278,11 @@ def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "sh
         scheme_response = SchemeResponse.model_validate(response.json())
         return str(scheme_response)
                 
-    except requests.Timeout as e:
+    except httpx.TimeoutException as e:
         logger.error(f"Scheme API request timed out: {str(e)}")
         return "Scheme request timed out. Please try again later."
     
-    except requests.RequestException as e:
+    except httpx.RequestError as e:
         logger.error(f"Scheme API request failed: {e}")
         return f"Scheme request failed: {str(e)}"
     

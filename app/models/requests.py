@@ -10,8 +10,10 @@ class ChatRequest(BaseModel):
 
 class TranscribeRequest(BaseModel):
     audio_content: str = Field(..., description="Base64 encoded audio content")
+    lang_code: str = Field(..., description="Language code for transcription")
     service_type: Literal['bhashini', 'whisper'] = Field('bhashini', description="Transcription service to use")
     session_id: Optional[str] = Field(None, description="Session ID")
+    qid: Optional[str] = Field(None, description="Question ID")
 
 class SuggestionsRequest(BaseModel):
     session_id: str = Field(..., description="Session ID to get suggestions for")
@@ -21,7 +23,8 @@ class TTSRequest(BaseModel):
     text: str = Field(..., description="Text to convert to speech")
     target_lang: str = Field('hi', description="Language code for TTS")
     session_id: Optional[str] = Field(None, description="Session ID")
-    service_type: Literal['bhashini', 'eleven_labs'] = Field('bhashini', description="TTS service to use") 
+    service_type: Literal['bhashini', 'eleven_labs'] = Field('bhashini', description="TTS service to use")
+    qid: Optional[str] = Field(None, description="Question ID") 
 
 
 class FileRequest(BaseModel):
