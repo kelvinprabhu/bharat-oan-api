@@ -1,10 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import Literal
-from pydantic_ai import Agent, NativeOutput
+from pydantic_ai import Agent, PromptedOutput
 from helpers.utils import get_prompt
 from dotenv import load_dotenv
 from pydantic_ai.models import ModelSettings
-from agents.models import LLM_MODEL
+from agents.models import LLM_MODERATION_MODEL
 
 # TODO: Add tools from tools/scheme.py
 load_dotenv()
@@ -19,25 +19,23 @@ class QueryModerationResult(BaseModel):
                       "invalid_language",
                       "unsafe_illegal",
                       "political_controversial",
-                      "role_obfuscation",
-                      "valid_schemes"] = Field(..., description="Moderation category of the user's message.")
+                      "role_obfuscation"] = Field(..., description="Moderation category of the user's message.")
     action: str = Field(..., description="Action to take on the query, always in English.")
 
     def __str__(self):
         category_str = self.category.replace("_", " ").title()
-        return f"**Moderation Recommendation:** {self.action} ({category_str})"
+        return f"**Moderation Compliance:** {self.action} ({category_str})"
 
 moderation_agent = Agent(
-    model=LLM_MODEL,
+    model=LLM_MODERATION_MODEL,
     name="Moderation Agent",
-    system_prompt=get_prompt('moderation_system'),
-    instrument=False,
-    output_type=NativeOutput(QueryModerationResult),
+    instructions=get_prompt('moderation_system'),
+    instrument=True,
+    output_type=PromptedOutput(QueryModerationResult),
     retries=3,
     model_settings=ModelSettings(
-        # openai_reasoning_effort='low',  
-        #max_tokens=350,  # Increased slightly to ensure complete reasoning + category
-        temperature=0.5,  # Absolute determinism for consistent outputs
-        top_p=0.95,       # Slightly higher to ensure all valid options are considered
+        temperature=1.0,
+        top_p=1.0,
+        openai_reasoning_effort='low',
     )
 )

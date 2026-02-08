@@ -22,65 +22,81 @@ TOOLS = [
     Tool(
         get_scheme_info,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         initiate_pm_kisan_status_check,
         takes_ctx=True,
+        strict=False,
     ),
     Tool(
         check_pm_kisan_status_with_otp,
         takes_ctx=True,
+        strict=False,
     ),
     Tool(
         check_pmfby_status,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         check_shc_status,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         submit_grievance,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         grievance_status,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         search_terms,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         search_documents,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         search_videos,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         search_pests_diseases,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         weather_forecast,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         get_mandi_prices,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         search_commodity,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         forward_geocode,
         takes_ctx=False,
+        strict=False,
     ),
     Tool(
         reverse_geocode,
-        takes_ctx=False,
+        takes_ctx=False,    
+        strict=False,
     ),
 ]

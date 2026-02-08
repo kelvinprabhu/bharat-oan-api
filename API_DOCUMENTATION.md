@@ -4,12 +4,6 @@
 
 Bharat OAN (Bharatvistaar AI API) is an AI-powered Voice Assistant API designed for agricultural support. The API provides capabilities for conversational AI interactions, speech-to-text transcription, text-to-speech conversion, and intelligent suggestions for agricultural queries. It supports multiple languages and integrates with services like Bhashini and Whisper for multilingual support.
 
-## Base URL
-
-```
-http://10.128.188.21
-```
-
 All API endpoints are prefixed with `/api` unless otherwise specified.
 
 ---

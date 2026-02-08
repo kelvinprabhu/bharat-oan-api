@@ -1,14 +1,14 @@
 import os
 from pydantic_ai import Agent, RunContext
 from helpers.utils import get_prompt, get_today_date_str
-from agents.models import LLM_MODEL
+from agents.models import LLM_AGRINET_MODEL
 from agents.tools import TOOLS
 from pydantic_ai.settings import ModelSettings
 from agents.deps import FarmerContext
 
 
 agrinet_agent = Agent(
-    model=LLM_MODEL,
+    model=LLM_AGRINET_MODEL,
     name="Vistaar Agent",
     instrument=False,
     output_type=str,
