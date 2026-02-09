@@ -118,7 +118,7 @@ async def run_single(item: dict) -> dict:
             "moderation": mod_category,
             "tools_called": tools_called,
             "response_length": len(response_text),
-            "response_preview": response_text[:200],
+            "response_preview": response_text,
             "moderation_s": round(moderation_elapsed, 2),
             "agent_s": round(agent_elapsed, 2),
             "total_s": round(total_elapsed, 2),
