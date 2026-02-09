@@ -64,8 +64,9 @@ async def search_documents(
             raise ValueError("Marqo index name is required")
         
         client = marqo.Client(url=endpoint_url)
+        client.config.timeout = 10
         logger.info(f"Searching for '{query}' in index '{index_name}'")
-        
+
         filter_string = f"type:document"
             
         # Perform search
@@ -121,8 +122,9 @@ async def search_videos(
             raise ValueError("Marqo index name is required")
         
         client = marqo.Client(url=endpoint_url)
+        client.config.timeout = 10
         logger.info(f"Searching for '{query}' in index '{index_name}'")
-        
+
         # Perform search using just tensor search
         search_params = {
             "q": query,
@@ -171,8 +173,9 @@ async def search_pests_diseases(
             raise ValueError("Marqo pests and diseases index name is required.")
         
         client = marqo.Client(url=endpoint_url)
+        client.config.timeout = 10
         logger.info(f"Searching for pests/diseases '{query}' in index '{index_name}'")
-        
+
         # Perform search
         search_params = {
             "q": query,
