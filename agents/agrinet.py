@@ -10,7 +10,7 @@ from agents.deps import FarmerContext
 agrinet_agent = Agent(
     model=LLM_AGRINET_MODEL,
     name="Vistaar Agent",
-    instrument=False,
+    instrument=True,
     output_type=str,
     deps_type=FarmerContext,
     retries=3,
@@ -18,12 +18,10 @@ agrinet_agent = Agent(
     end_strategy='exhaustive',
     model_settings=ModelSettings(
         temperature=1.0,
-        max_tokens=10240,
         top_p=1.0,
         top_k=100,
         parallel_tool_calls=True,  
-        openai_reasoning_effort='medium',  
-        openai_send_reasoning_ids=False,
+        openai_reasoning_effort='medium'
    )
 )
 

@@ -16,8 +16,7 @@ class FarmerContext(BaseModel):
     Example:
         **User:** "What is the weather in Mumbai?"
         **Selected Language:** Hindi
-        **Session ID:** "abc123"
-        **Moderation Result:** "This is a valid agricultural question."
+        **Moderation Compliance:** "Valid Agricultural (This is a valid agricultural question.)"
     """
     query: str = Field(description="The user's question.")
     lang_code: str = Field(description="The language code of the user's question.", default='hi')
