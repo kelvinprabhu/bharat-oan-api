@@ -70,7 +70,7 @@ class Item(BaseModel):
         
         # Use the scheme name from the descriptor, fallback to id if not available
         scheme_name = self.descriptor.name or self.id
-        lines.append(f"# Scheme: {scheme_name}")
+        lines.append(f"**Source:** {scheme_name}")
         lines.append("")  # Add blank line after scheme name
         
         if self.tags:
@@ -173,7 +173,7 @@ class SchemeRequest(BaseModel):
     """SchemeRequest model for the scheme API.
     
     Args:
-        scheme_name (Optional[str]): Name of the scheme. 
+        scheme_name (str): Name of the scheme. 
             Can be one of:
              - "kcc": Kisan Credit Card scheme
              - "pmkisan": Pradhan Mantri Kisan Samman Nidhi scheme  
@@ -183,7 +183,6 @@ class SchemeRequest(BaseModel):
              - "sathi": SATHI Seed Authentication, Traceability & Holistic Inventory
              - "pmasha": Pradhan Mantri Annadata Aay Sanrakshan Abhiyan
              - "aif": Agriculture Infrastructure Fund
-             - None: Retrieve all available schemes
     """
     scheme_name: str
     
@@ -234,7 +233,7 @@ class SchemeRequest(BaseModel):
             }
         }
 
-def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "shc", "pmksy", "sathi", "pmasha", "aif"]] = None) -> str:
+def get_scheme_info(scheme_name: Literal["kcc", "pmkisan", "pmfby", "shc", "pmksy", "sathi", "pmasha", "aif"]) -> str:
     """Retrieve detailed information about government agricultural schemes.
     
     This tool fetches comprehensive scheme data including benefits, eligibility criteria, 
@@ -242,7 +241,7 @@ def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "sh
     tool whenever users inquire about specific schemes or need general scheme information.
 
     Args:
-        scheme_name (Optional[str]): Name of the scheme to retrieve. Options:
+        scheme_name (str): Name of the scheme to retrieve. Options:
             - "kcc": Kisan Credit Card scheme
             - "pmkisan": Pradhan Mantri Kisan Samman Nidhi scheme  
             - "pmfby": Pradhan Mantri Fasal Bima Yojana scheme
@@ -251,17 +250,14 @@ def get_scheme_info(scheme_name: Optional[Literal["kcc", "pmkisan", "pmfby", "sh
             - "sathi": Seed Authentication, Traceability & Holistic Inventory
             - "pmasha": Pradhan Mantri Annadata Aay Sanrakshan Abhiyan
             - "aif": Agriculture Infrastructure Fund
-            - None: Retrieve all available schemes
 
     Returns:
         str: Formatted scheme data including introduction, benefits, eligibility, 
              application process, and other relevant information.
     """
     try:
-        # Convert None to empty string for the API request
-        scheme_name_str = scheme_name or ""
-        payload = SchemeRequest(scheme_name=scheme_name_str).get_payload()
-        logger.info(f"SchemeName: {scheme_name_str}")
+        payload = SchemeRequest(scheme_name=scheme_name).get_payload()
+        logger.info(f"SchemeName: {scheme_name}")
         logger.info(f"BAP_ENDPOINT: {os.getenv('BAP_ENDPOINT')}")
         logger.info(f"Payload: {payload}")
         response = httpx.post(
