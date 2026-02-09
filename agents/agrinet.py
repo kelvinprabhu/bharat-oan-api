@@ -19,8 +19,8 @@ agrinet_agent = Agent(
     model_settings=ModelSettings(
         temperature=1.0,
         top_p=1.0,
-        top_k=100,
-        parallel_tool_calls=True,  
+        parallel_tool_calls=True,
+        timeout=30,
         openai_reasoning_effort='medium'
    )
 )
