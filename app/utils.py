@@ -68,32 +68,63 @@ async def update_moderation_history(session_id: str, moderation_messages: List[M
 
 def filter_out_tool_calls(messages: List[ModelMessage]) -> List[ModelMessage]:
     """Filter out tool calls and tool returns from the message history.
-    
+
     Args:
         messages: List of messages (ModelRequest/ModelResponse objects)
-        
+
     Returns:
         List of messages with tool calls and returns removed
     """
     if not messages:
         return []
-    
+
     filtered_messages = []
     for message in messages:
         # Create a deep copy to avoid modifying the original
         msg_copy = deepcopy(message)
         filtered_parts = []
-        
+
         for part in msg_copy.parts:
             # Only keep non-tool parts
             if not hasattr(part, 'part_kind') or part.part_kind not in ['tool-call', 'tool-return']:
                 filtered_parts.append(part)
-        
+
         # Only add messages that have non-tool parts
         if filtered_parts:
             msg_copy.parts = filtered_parts
-            filtered_messages.append(msg_copy)            
+            filtered_messages.append(msg_copy)
     return filtered_messages
+
+
+def filter_thinking_from_history(messages: List[ModelMessage]) -> List[ModelMessage]:
+    """Remove ThinkingPart from ModelResponse messages in history.
+
+    vLLM/OpenAI-compatible servers choke when pydantic-ai wraps ThinkingPart
+    content back into <think> tags in the assistant message (causes
+    "Unknown role: final" errors).  Stripping them from history also prevents
+    leaked <think> content from accumulating across multi-turn conversations.
+
+    Args:
+        messages: List of ModelMessage (ModelRequest / ModelResponse).
+
+    Returns:
+        New list with ThinkingPart removed from every ModelResponse.
+    """
+    if not messages:
+        return messages
+
+    cleaned: List[ModelMessage] = []
+    for message in messages:
+        if getattr(message, 'kind', '') == 'response':
+            non_thinking = [p for p in message.parts if getattr(p, 'part_kind', '') != 'thinking']
+            if non_thinking:
+                msg_copy = deepcopy(message)
+                msg_copy.parts = non_thinking
+                cleaned.append(msg_copy)
+            # Drop the message entirely if it had only thinking parts
+        else:
+            cleaned.append(message)
+    return cleaned
 
 
 
