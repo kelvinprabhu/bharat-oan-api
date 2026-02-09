@@ -1,8 +1,8 @@
 import os
-# import logfire
+import logfire
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-# logfire.configure(scrubbing=False,environment=os.getenv("ENVIRONMENT"))
+logfire.configure(scrubbing=False,environment=os.getenv("ENVIRONMENT"))
