@@ -345,29 +345,19 @@ class StatusResponse(BaseModel):
         return "\n".join(str(response) for response in self.responses if str(response))
 
 class PMfbyInitRequest(BaseModel):
-    """PMfbyInitRequest model for initiating PMFBY status check (sends OTP).
+    """PMfbyInitRequest model for initiating PMFBY OTP (get_otp).
     
-    Args:
-        inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status' (required)
-        year (str): Year for which status is requested (required)
-        season (str): Season for which status is requested (required):
-            - "Kharif" - Kharif season
-            - "Rabi" - Rabi season
-            - "Summer" - Summer season
-        phone_number (str): Phone number registered with the scheme (required)
-        transaction_id (str): Transaction ID for correlating init and status calls
+    Init only needs phone_number; inquiry_type, year, season are for status call.
+    Matches BAP init spec: request_type=get_otp, provider=pmfby-agri, timestamp=Unix.
     """
-    inquiry_type: Literal["policy_status", "claim_status"]
-    year: str
-    season: Literal["Kharif", "Rabi", "Summer"]
     phone_number: str
     transaction_id: str
 
     def get_payload(self) -> Dict[str, Any]:
         now = datetime.now(timezone.utc)
-        # BAP expects Unix timestamp as string (e.g. "1770623357")
-        timestamp_str = str(int(now.timestamp()))
         phone = normalize_phone_for_api(self.phone_number)
+        # BAP init expects Unix timestamp as string (e.g. "1770634282")
+        timestamp_str = str(int(now.timestamp()))
         return {
             "context": {
                 "domain": "schemes:vistaar",
@@ -388,16 +378,15 @@ class PMfbyInitRequest(BaseModel):
             },
             "message": {
                 "order": {
-                    "provider": {"id": "schemes-agri"},
+                    "provider": {"id": "pmfby-agri"},
                     "items": [{"id": "pmfby"}],
                     "fulfillments": [
                         {
                             "customer": {
                                 "person": {
                                     "tags": [
-                                        {"descriptor": {"code": "inquiry_type"}, "value": self.inquiry_type},
-                                        {"descriptor": {"code": "year"}, "value": self.year},
-                                        {"descriptor": {"code": "season"}, "value": self.season}
+                                        {"descriptor": {"code": "request_type"}, "value": "get_otp"},
+                                        {"descriptor": {"code": "phone_number"}, "value": phone}
                                     ]
                                 },
                                 "contact": {"phone": phone}
@@ -454,7 +443,7 @@ class PMfbyStatusWithOtpRequest(BaseModel):
                 "order_id": self.order_id,
                 "order": {
                     "id": "order-1",
-                    "provider": {"id": "schemes-agri"},
+                    "provider": {"id": "pmfby-agri"},
                     "items": [{"id": "pmfby"}],
                     "fulfillments": [
                         {
@@ -478,36 +467,23 @@ class PMfbyStatusWithOtpRequest(BaseModel):
 # Functions
 # -----------------------
 
-def initiate_pmfby_status_check(
-    ctx: RunContext[FarmerContext],
-    phone_number: str,
-    inquiry_type: Literal["policy_status", "claim_status"],
-    year: str,
-    season: Literal["Kharif", "Rabi", "Summer"]
-) -> str:
+def initiate_pmfby_status_check(ctx: RunContext[FarmerContext], phone_number: str) -> str:
     """Initiate PMFBY status check by sending OTP to farmer's mobile.
     
-    Use this tool to initiate the process to check policy or claim status for PMFBY.
-    Sends an OTP to the farmer's registered mobile number.
+    Use this tool to initiate the process. Sends an OTP to the farmer's registered mobile.
+    After OTP is received, use check_pmfby_status_with_otp with the OTP and inquiry details.
     
     Args:
         phone_number (str): Phone number registered with PMFBY (required)
-        inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status' (required)
-        year (str): Year for which status is requested (required)
-        season (str): Season - Kharif, Rabi, or Summer (required)
     
     Returns:
         str: Response from the scheme init service (OTP sent confirmation)
     """
     try:
         session_id = ctx.deps.session_id
-        key = f"{phone_number}_{inquiry_type}_{year}_{season}"
-        transaction_id = generate_transaction_id(session_id, key)
+        transaction_id = generate_transaction_id(session_id, phone_number)
         
         payload = PMfbyInitRequest(
-            inquiry_type=inquiry_type,
-            year=year,
-            season=season,
             phone_number=phone_number,
             transaction_id=transaction_id
         ).get_payload()
@@ -587,8 +563,8 @@ def check_pmfby_status_with_otp(
             raise ModelRetry("Invalid OTP. Please provide the OTP received via SMS.")
         
         session_id = ctx.deps.session_id
-        key = f"{phone_number}_{inquiry_type}_{year}_{season}"
-        transaction_id = generate_transaction_id(session_id, key)
+        # Use same transaction_id key as init (phone_number only)
+        transaction_id = generate_transaction_id(session_id, phone_number)
         
         payload = PMfbyStatusWithOtpRequest(
             order_id=str(otp).strip(),
