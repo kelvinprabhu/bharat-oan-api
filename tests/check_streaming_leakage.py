@@ -38,7 +38,7 @@ from agents.moderation import moderation_agent
 from agents.agrinet import agrinet_agent
 from agents.deps import FarmerContext
 from pydantic_ai import (
-    Agent,
+    AgentRunResultEvent,
     FinalResultEvent,
     PartDeltaEvent,
     PartStartEvent,
@@ -122,78 +122,73 @@ async def run_single_streaming(item: dict) -> dict:
         deps.update_moderation_str(str(mod_output))
         user_message = deps.get_user_message()
 
-        async with agrinet_agent.iter(
+        final_result_found = False
+
+        async for event in agrinet_agent.run_stream_events(
             user_prompt=user_message,
             message_history=[],
             deps=deps,
-        ) as agent_run:
-            async for node in agent_run:
-                if Agent.is_user_prompt_node(node):
-                    all_events_log.append("user_prompt_node")
-                    continue
-                elif Agent.is_model_request_node(node):
-                    all_events_log.append("model_request_node")
-                    async with node.stream(agent_run.ctx) as response_stream:
-                        final_result_found = False
+        ):
+            kind = getattr(event, 'event_kind', '')
 
-                        async for event in response_stream:
-                            if isinstance(event, PartStartEvent):
-                                if isinstance(event.part, ThinkingPart):
-                                    all_events_log.append("part_start:thinking")
-                                elif isinstance(event.part, TextPart):
-                                    all_events_log.append(f"part_start:text")
-                                else:
-                                    all_events_log.append(f"part_start:{type(event.part).__name__}")
-                            elif isinstance(event, PartDeltaEvent):
-                                if isinstance(event.delta, ThinkingPartDelta):
-                                    all_events_log.append("delta:thinking")
-                                    thinking_chunks.append(event.delta.content_delta or "")
-                                elif isinstance(event.delta, TextPartDelta):
-                                    chunk = event.delta.content_delta or ""
-                                    if final_result_found:
-                                        all_events_log.append(f"delta:text:YIELDED")
-                                        raw_streamed_chunks.append(chunk)
+            if kind == 'part_start':
+                if isinstance(event.part, ThinkingPart):
+                    all_events_log.append("part_start:thinking")
+                elif isinstance(event.part, TextPart):
+                    all_events_log.append("part_start:text")
+                else:
+                    all_events_log.append(f"part_start:{type(event.part).__name__}")
 
-                                        # Apply same <think> stripping as chat.py
-                                        if inside_leaked_think:
-                                            end_idx = chunk.find('</think>')
-                                            if end_idx >= 0:
-                                                inside_leaked_think = False
-                                                chunk = chunk[end_idx + len('</think>'):]
-                                            else:
-                                                chunk = ""
-                                        if '<think>' in chunk:
-                                            end_idx = chunk.find('</think>')
-                                            if end_idx >= 0:
-                                                chunk = re.sub(r'<think>[\s\S]*?</think>', '', chunk)
-                                            else:
-                                                inside_leaked_think = True
-                                                chunk = chunk[:chunk.find('<think>')]
+            elif kind == 'part_delta':
+                if isinstance(event.delta, ThinkingPartDelta):
+                    all_events_log.append("delta:thinking")
+                    thinking_chunks.append(event.delta.content_delta or "")
+                elif isinstance(event.delta, TextPartDelta):
+                    chunk = event.delta.content_delta or ""
+                    if final_result_found:
+                        all_events_log.append("delta:text:YIELDED")
+                        raw_streamed_chunks.append(chunk)
 
-                                        if chunk:
-                                            streamed_chunks.append(chunk)
-                                    else:
-                                        all_events_log.append(f"delta:text:PRE_FINAL")
-                                        pre_final_chunks.append(chunk)
-                                else:
-                                    all_events_log.append(f"delta:{type(event.delta).__name__}")
-                            elif isinstance(event, FinalResultEvent):
-                                all_events_log.append("FINAL_RESULT_EVENT")
-                                final_result_found = True
+                        # Apply same <think> stripping
+                        if inside_leaked_think:
+                            end_idx = chunk.find('</think>')
+                            if end_idx >= 0:
+                                inside_leaked_think = False
+                                chunk = chunk[end_idx + len('</think>'):]
                             else:
-                                all_events_log.append(f"other:{type(event).__name__}")
-                elif Agent.is_call_tools_node(node):
-                    all_events_log.append("call_tools_node")
-                    # Extract tool names
-                    async with node.stream(agent_run.ctx) as tool_stream:
-                        async for event in tool_stream:
-                            if isinstance(event, PartStartEvent):
-                                part_name = getattr(event.part, 'tool_name', None)
-                                if part_name:
-                                    tools_called.append(part_name)
-                elif Agent.is_end_node(node):
-                    all_events_log.append("end_node")
-                    break
+                                chunk = ""
+                        if '<think>' in chunk:
+                            end_idx = chunk.find('</think>')
+                            if end_idx >= 0:
+                                chunk = re.sub(r'<think>[\s\S]*?</think>', '', chunk)
+                            else:
+                                inside_leaked_think = True
+                                chunk = chunk[:chunk.find('<think>')]
+
+                        if chunk:
+                            streamed_chunks.append(chunk)
+                    else:
+                        all_events_log.append("delta:text:PRE_FINAL")
+                        pre_final_chunks.append(chunk)
+                else:
+                    all_events_log.append(f"delta:{type(event.delta).__name__}")
+
+            elif kind == 'final_result':
+                all_events_log.append("FINAL_RESULT_EVENT")
+                final_result_found = True
+
+            elif kind == 'function_tool_call':
+                all_events_log.append("function_tool_call")
+                tool_name = getattr(event.part, 'tool_name', None)
+                if tool_name:
+                    tools_called.append(tool_name)
+
+            elif kind == 'function_tool_result':
+                all_events_log.append("function_tool_result")
+                final_result_found = False  # Reset for next model turn
+
+            elif kind == 'agent_run_result':
+                all_events_log.append("agent_run_result")
 
         elapsed = time.perf_counter() - start
 

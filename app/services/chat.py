@@ -12,7 +12,7 @@ from app.utils import (
 # from app.tasks.suggestions import create_suggestions  # Commented out: suggestion agent disabled
 from agents.deps import FarmerContext
 from pydantic_ai import (
-    Agent,
+    AgentRunResultEvent,
     FinalResultEvent,
     PartDeltaEvent,
     PartStartEvent,
@@ -79,52 +79,51 @@ async def stream_chat_messages(
     # errors and avoids leaking reasoning into the conversation context).
     trimmed_history = filter_thinking_from_history(trimmed_history)
 
-    async with agrinet_agent.iter(user_prompt=user_message, message_history=trimmed_history, deps=deps) as agent_run:
-        async for node in agent_run:
-            if Agent.is_user_prompt_node(node):
-                logger.info(f"User prompt node: {node.user_prompt}")
-                continue
-            elif Agent.is_model_request_node(node):
-                async with node.stream(agent_run.ctx) as response_stream:
-                    final_result_found = False
+    new_messages = None
+    final_result_found = False
 
-                    async for event in response_stream:
-                        if isinstance(event, PartStartEvent):
-                            if isinstance(event.part, ThinkingPart):
-                                logger.info("Reasoning part started (not streamed to user)")
-                            elif isinstance(event.part, TextPart):
-                                pass
-                        elif isinstance(event, PartDeltaEvent):
-                            if isinstance(event.delta, ThinkingPartDelta):
-                                # Don't stream reasoning to user
-                                pass
-                            elif isinstance(event.delta, TextPartDelta):
-                                # Only yield text deltas after FinalResultEvent
-                                if final_result_found and event.delta.content_delta:
-                                    yield event.delta.content_delta
-                        elif isinstance(event, FinalResultEvent):
-                            logger.info("[Result] The model started producing a final result")
-                            final_result_found = True
-                            # Don't break - continue to collect text deltas
-            elif Agent.is_call_tools_node(node):
-                logger.info("Tool execution node")
-                continue
-            elif Agent.is_end_node(node):
-                logger.info(f"End node reached: {node.data.output}")
-                break
+    async for event in agrinet_agent.run_stream_events(
+        user_prompt=user_message,
+        message_history=trimmed_history,
+        deps=deps
+    ):
+        kind = getattr(event, 'event_kind', '')
 
-    # Get the result and new messages after streaming completes
-    new_messages = agent_run.result.new_messages() if agent_run and agent_run.result else []
+        if kind == 'part_start':
+            if isinstance(event.part, ThinkingPart):
+                logger.info("Reasoning part started (not streamed to user)")
+
+        elif kind == 'part_delta':
+            if isinstance(event.delta, ThinkingPartDelta):
+                pass  # Don't stream reasoning to user
+            elif isinstance(event.delta, TextPartDelta):
+                # Only yield text deltas after FinalResultEvent
+                if final_result_found and event.delta.content_delta:
+                    yield event.delta.content_delta
+
+        elif kind == 'final_result':
+            logger.info("[Result] The model started producing a final result")
+            final_result_found = True
+
+        elif kind == 'function_tool_call':
+            logger.info(f"Tool call: {event.part.tool_name}")
+
+        elif kind == 'function_tool_result':
+            logger.info("Tool result received")
+            final_result_found = False  # Reset for next model turn
+
+        elif kind == 'agent_run_result':
+            new_messages = event.result.new_messages()
+
     logger.info(f"Streaming complete for session {session_id}")
-    
+
     # Post-processing happens AFTER streaming is complete.
     # Strip thinking parts before persisting so they don't accumulate
     # in the cache and get sent back to vLLM on subsequent turns.
+    if not new_messages:
+        new_messages = []
     clean_new_messages = filter_thinking_from_history(list(new_messages))
-    messages = [
-        *history,
-        *clean_new_messages
-    ]
+    messages = [*history, *clean_new_messages]
 
     logger.info(f"Updating message history for session {session_id} with {len(messages)} messages")
     await update_message_history(session_id, messages)
