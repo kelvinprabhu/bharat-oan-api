@@ -17,9 +17,12 @@ agrinet_agent = Agent(
     tools=TOOLS,
     end_strategy='exhaustive',
     model_settings=ModelSettings(
+        temperature=1.0,
+        top_p=1.0,
+        top_k=0,
         parallel_tool_calls=True,
         timeout=30,
-        openai_reasoning_effort='high'
+        openai_reasoning_effort='medium'
    )
 )
 
