@@ -83,7 +83,7 @@ async def create_auth_token(request: Optional[AuthRequest] = None):
             algorithm=settings.jwt_algorithm
         )
         
-        logger.info(f"JWT token created successfully for mobile: {mobile}, role: {role}")
+        logger.debug("JWT token created successfully")
         
         # Calculate expiration time in seconds
         expires_in = int(exp.timestamp() - now.timestamp())
