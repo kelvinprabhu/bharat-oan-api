@@ -1,0 +1,13 @@
+*.tar
+.git
+.gitignore
+.dockerignore
+.venv
+.env.example
+__pycache__
+*.pyc
+*.pyo
+tests/
+logs/
+*.md
+.claude/
