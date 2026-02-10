@@ -22,13 +22,14 @@ agrinet_agent = Agent(
         top_k=0,
         parallel_tool_calls=True,
         timeout=30,
+        openai_send_reasoning_ids=False,
         openai_reasoning_effort='medium'
    )
 )
 
-@agrinet_agent.system_prompt(dynamic=True)
-def get_system_prompt(ctx: RunContext[FarmerContext]):
-    """Get the system prompt for the agrinet agent."""
+@agrinet_agent.instructions
+def get_instructions(ctx: RunContext[FarmerContext]):
+    """Get the instructions for the agrinet agent."""
     deps = ctx.deps
     lang_code = deps.lang_code if deps.lang_code else 'en'
     return get_prompt(f'agrinet_{lang_code}', context={'today_date': get_today_date_str()})
