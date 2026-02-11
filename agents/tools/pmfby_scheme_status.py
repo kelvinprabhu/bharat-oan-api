@@ -549,7 +549,7 @@ def check_pmfby_status_with_otp(
     after calling initiate_pmfby_status_check.
     
     Args:
-        otp (str): OTP received via SMS (used as order_id for API)
+        otp (str): 6-digit OTP received via SMS (used as order_id for API)
         phone_number (str): Phone number registered with PMFBY (required)
         inquiry_type (str): Type of inquiry - 'policy_status' or 'claim_status' (required)
         year (str): Year for which status is requested (required)
@@ -559,15 +559,23 @@ def check_pmfby_status_with_otp(
         str: Detailed scheme status information
     """
     try:
-        if not otp or not str(otp).strip():
+        otp_str = str(otp).strip() if otp else ""
+        if not otp_str:
             raise ModelRetry("Invalid OTP. Please provide the OTP received via SMS.")
-        
+        # PMFBY OTP is 6 digits only
+        digits = "".join(c for c in otp_str if c.isdigit())
+        if len(digits) != 6:
+            raise ModelRetry(
+                "PMFBY OTP must be exactly 6 digits. Please ask the farmer for the 6-digit OTP they received on their mobile."
+            )
+        otp_str = digits
+
         session_id = ctx.deps.session_id
         # Use same transaction_id key as init (phone_number only)
         transaction_id = generate_transaction_id(session_id, phone_number)
         
         payload = PMfbyStatusWithOtpRequest(
-            order_id=str(otp).strip(),
+            order_id=otp_str,
             transaction_id=transaction_id,
             inquiry_type=inquiry_type,
             year=year,
