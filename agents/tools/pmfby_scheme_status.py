@@ -608,6 +608,9 @@ def check_pmfby_status_with_otp(
         try:
             response_json = response.json()
             scheme_response = StatusResponse.model_validate(response_json)
+            if not scheme_response._has_valid_data():
+                record_type = "policy" if inquiry_type == "policy_status" else "claim"
+                return f"No {record_type} record found for {year} {season}."
             return str(scheme_response)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from PMFBY status API: {e}")
