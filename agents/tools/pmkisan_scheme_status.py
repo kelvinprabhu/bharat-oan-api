@@ -521,14 +521,15 @@ def check_pm_kisan_status_with_otp(ctx: RunContext[FarmerContext], otp: str, reg
     """
     try:
         # Validate OTP format - must be exactly 4 digits
-        if not otp.isdigit() or len(otp) != 4:
+        otp_clean = str(otp).strip()
+        if not otp_clean.isdigit() or len(otp_clean) != 4:
             raise ModelRetry("Invalid OTP format. Please provide a 4-digit OTP received via SMS.")
         # Get session_id from context
         session_id = ctx.deps.session_id
         transaction_id = generate_transaction_id(session_id, reg_no)
         logger.info(f"Transaction ID: {transaction_id}")
         payload = SchemeStatusRequest(transaction_id=transaction_id,
-                                      otp=otp,  
+                                      otp=otp_clean,
                                       registration_number=reg_no,
                                       ).get_payload()
         
