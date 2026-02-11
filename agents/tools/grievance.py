@@ -15,6 +15,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple, Literal
 
 import httpx
+from app.config import get_default_httpx_timeout
 from pydantic import BaseModel, Field, AnyUrl, ValidationError
 from pydantic_ai import ModelRetry
 from helpers.utils import get_logger
@@ -81,9 +82,6 @@ class GrievanceClient(BaseModel):
     token: str = Field(default=GRIEVANCE_TOKEN)
     crypto: Crypto
 
-    timeout_connect: int = 20
-    timeout_read: int = 30
-
     @classmethod
     def from_env(cls) -> "GrievanceClient":
         if not GRIEVANCE_BASE_URL:
@@ -95,7 +93,8 @@ class GrievanceClient(BaseModel):
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         encrypted_body = self.crypto.encrypt_payload(body)
         logger.info(f"Grievance API request: {url} | body: {json.dumps(encrypted_body)}")
-        resp = httpx.post(url, json=encrypted_body, headers=headers, timeout=httpx.Timeout(self.timeout_connect, read=self.timeout_read))
+        timeout = get_default_httpx_timeout()
+        resp = httpx.post(url, json=encrypted_body, headers=headers, timeout=timeout)
         logger.info(f"Grievance API response: {url} | status: {resp.status_code} | body: {resp.text[:500]}")
         return resp
 

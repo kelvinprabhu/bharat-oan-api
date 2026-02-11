@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from helpers.utils import get_logger, get_today_date_str
 import httpx
+from app.config import get_default_httpx_timeout
 from pydantic import BaseModel, AnyHttpUrl, Field
 from typing import List, Optional, Dict, Any
 from pydantic_ai import ModelRetry, UnexpectedModelBehavior
@@ -377,7 +378,7 @@ async def get_mandi_prices(
         response = httpx.post(
             search_url,
             json=payload,
-            timeout=httpx.Timeout(20.0, read=30.0)
+            timeout=get_default_httpx_timeout()
         )
         if response.status_code != 200:
             logger.error(

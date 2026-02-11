@@ -6,6 +6,7 @@ import hashlib
 from datetime import datetime, timezone
 from helpers.utils import get_logger
 import httpx
+from app.config import get_default_httpx_timeout
 from pydantic import BaseModel, AnyHttpUrl
 from typing import List, Optional, Dict, Any, Literal
 from app.core.cache import cache
@@ -564,7 +565,7 @@ async def check_shc_status(
             response = await client.post(
                 os.getenv("BAP_ENDPOINT").rstrip("/") + "/init",
                 json=payload,
-                timeout=httpx.Timeout(10.0, read=15.0)
+                timeout=get_default_httpx_timeout()
             )
         
             if response.status_code != 200:

@@ -1,11 +1,13 @@
 import os
 from pathlib import Path
 from typing import List, Optional
+import httpx
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
 
 class Settings(BaseSettings):
     # Core Application Settings
@@ -84,8 +86,17 @@ class Settings(BaseSettings):
     marqo_index_name: Optional[str] = None
     marqo_pests_diseases_index_name: Optional[str] = None
 
+    # HTTP client timeouts for outbound API calls (connect and read; read should be > connect)
+    default_api_timeout: float = 5.0   # connect timeout (DEFAULT_API_TIMEOUT)
+    default_api_read_timeout: float = 10.0  # read timeout (DEFAULT_API_READ_TIMEOUT)
+
     class Config:
         env_file = ".env"
         extra = 'ignore'  # Ignore extra fields from .env
 
-settings = Settings() 
+settings = Settings()
+
+
+def get_default_httpx_timeout() -> httpx.Timeout:
+    """Default timeout for outbound API calls. Connect from DEFAULT_API_TIMEOUT, read from DEFAULT_API_READ_TIMEOUT (read > connect)."""
+    return httpx.Timeout(settings.default_api_timeout, read=settings.default_api_read_timeout) 
