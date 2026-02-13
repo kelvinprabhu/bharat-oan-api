@@ -6,7 +6,10 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from helpers.utils import get_logger, get_today_date_str
+import humanize
 import httpx
+import pytz
+from dateutil import parser as dateutil_parser
 from app.config import get_default_httpx_timeout
 from pydantic import BaseModel, AnyHttpUrl, Field
 from typing import List, Optional, Dict, Any
@@ -126,6 +129,40 @@ class Category(BaseModel):
         return self.descriptor.name or self.id
 
 # -----------------------
+# Arrival date -> "X days ago"
+# -----------------------
+_IST = pytz.timezone("Asia/Kolkata")
+
+
+def _arrival_date_to_days_ago(arrival_date_str: str) -> str:
+    """Get a relative time string like '10 days ago', '1 day ago', 'today'. Do not use calendar dates."""
+    if not arrival_date_str or not arrival_date_str.strip():
+        return ""
+    try:
+        dt = dateutil_parser.parse(arrival_date_str.strip(), dayfirst=True)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=_IST)
+        now = datetime.now(_IST)
+        if dt > now:
+            return arrival_date_str
+        return humanize.naturaltime(now - dt)
+    except Exception:
+        return arrival_date_str
+
+
+def _arrival_date_sort_key(item: "MandiItem") -> datetime:
+    """Return a comparable datetime for sorting; items without date sort last (max datetime)."""
+    arrival_date = item._get_tag_value("Arrival Date") or ""
+    if not arrival_date or not arrival_date.strip():
+        return datetime.max.replace(tzinfo=_IST)
+    try:
+        dt = dateutil_parser.parse(arrival_date.strip(), dayfirst=True)
+        return dt.replace(tzinfo=_IST) if dt.tzinfo is None else dt
+    except Exception:
+        return datetime.max.replace(tzinfo=_IST)
+
+
+# -----------------------
 # MandiItem
 # -----------------------
 class MandiItem(BaseModel):
@@ -172,7 +209,9 @@ class MandiItem(BaseModel):
                 price_str += f" (Min: {min_price}, Max: {max_price})"
             lines.append(f"Price: {price_str}")
         if arrival_date:
-            lines.append(f"Arrival Date: {arrival_date}")
+            days_ago = _arrival_date_to_days_ago(arrival_date)
+            if days_ago:
+                lines.append(f"{days_ago}")
         extras = []
         if variety:
             extras.append(f"Variety: {variety}")
@@ -196,7 +235,13 @@ class Provider(BaseModel):
     def __str__(self) -> str:
         lines = []
         if self.items:
-            for item in self.items:
+            # Newest first (most recent arrival date at top)
+            sorted_items = sorted(
+                self.items,
+                key=_arrival_date_sort_key,
+                reverse=True,
+            )
+            for item in sorted_items:
                 lines.append(str(item))
         return "\n---\n".join(lines)
 
@@ -267,12 +312,12 @@ class MandiRequest(BaseModel):
         latitude (float): Latitude of the location, example: 21.6571
         longitude (float): Longitude of the location, example: 82.1612
         commodity_code (int): AGMKT commodity code, example: 2 (Paddy)
-        days_back (int): Number of days to look back from today, default 2
+        days_back (int): Number of days to look back from today, default 7
     """
     latitude: float = Field(..., description="Latitude of the location")
     longitude: float = Field(..., description="Longitude of the location")
     commodity_code: int = Field(..., description="AGMKT commodity code")
-    days_back: int = Field(default=2, description="Number of days to look back from today")
+    days_back: int = Field(default=7, description="Number of days to look back from today")
 
     def get_payload(self) -> Dict[str, Any]:
         """
@@ -282,8 +327,8 @@ class MandiRequest(BaseModel):
             Dict[str, Any]: The dictionary representation of the request payload.
         """
         now = datetime.now(timezone.utc)
-        start_date = "2025-08-01T00:00:00.000Z"
-        end_date = "2025-08-01T23:59:59.999Z"
+        start_date = (now - timedelta(days=self.days_back)).strftime('%Y-%m-%dT00:00:00.000Z')
+        end_date = now.strftime('%Y-%m-%dT23:59:59.999Z')
 
         return {
             "context": {
@@ -345,7 +390,7 @@ async def get_mandi_prices(
     latitude: float,
     longitude: float,
     commodity_code: int,
-    days_back: int = 2,
+    days_back: int = 7,
 ) -> str:
     """Get mandi prices for a specific commodity near a location.
 
@@ -356,7 +401,7 @@ async def get_mandi_prices(
         latitude (float): Latitude of the location
         longitude (float): Longitude of the location
         commodity_code (int): AGMKT commodity code (use search_commodity tool to find the code)
-        days_back (int): Number of days to look back from today for price data (default 2)
+        days_back (int): Number of days to look back from today for price data (default 7)
 
     Returns:
         str: Formatted mandi price data for the requested commodity and location
