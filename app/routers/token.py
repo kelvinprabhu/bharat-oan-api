@@ -65,7 +65,7 @@ async def create_auth_token(request: Optional[AuthRequest] = None):
         
         # Create JWT payload
         now = datetime.utcnow()
-        exp = now + timedelta(days=30)
+        exp = now + timedelta(minutes=15)
         
         payload = {
             "mobile": mobile,
