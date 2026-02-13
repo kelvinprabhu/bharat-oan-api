@@ -55,6 +55,7 @@ class ItemResponseEks(BaseEventData):
     qid: str
     type: str
     state: str
+    errorDetails: Optional[Dict[str, Any]] = None
 
 
 class EndEventEks(BaseEventData):
@@ -198,8 +199,8 @@ def create_event(
         did=did,
         edata=EData(eks=event_data)
     )
-    event.eid   = event.eid.value
-    event.edata.eks = event.edata.eks.model_dump()
+    event.eid = event.eid.value
+    event.edata.eks = event.edata.eks.model_dump(exclude_none=True)
     return event
 
 
@@ -507,14 +508,22 @@ def create_tts_event(
         ttsResponseDetails=tts_response_details,
         questionsDetails=questions_details if questions_details else None
     )
-    
+
+    error_details = None
+    if not success:
+        error_details = {
+            "errorText": error_message or "error",
+            "sessionId": session_id,
+        }
+
     return create_event(
         event_type=EventType.OE_ITEM_RESPONSE,
         event_data=ItemResponseEks(
             target=target,
             qid=qid or f"tts_{session_id}",
             type="BHASHINI_TTS",
-            state=""
+            state="",
+            errorDetails=error_details,
         ),
         uid=uid,
         sid=session_id,
@@ -575,14 +584,22 @@ def create_asr_event(
         asrResponseDetails=asr_response_details,
         questionsDetails=questions_details if questions_details else None
     )
-    
+
+    error_details = None
+    if not success:
+        error_details = {
+            "errorText": error_message or "error",
+            "sessionId": session_id,
+        }
+
     return create_event(
         event_type=EventType.OE_ITEM_RESPONSE,
         event_data=ItemResponseEks(
             target=target,
             qid=qid or f"asr_{session_id}",
             type="BHASHINI_ASR",
-            state=""
+            state="",
+            errorDetails=error_details,
         ),
         uid=uid,
         sid=session_id,
