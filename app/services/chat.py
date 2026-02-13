@@ -63,8 +63,9 @@ async def stream_chat_messages(
 
     deps.update_moderation_str(str(moderation_data))
 
-    user_message = deps.get_user_message()
-    logger.info(f"Running agent with user message: {user_message}")
+    # Include conversation in the user message so the agent always sees prior context
+    # (in addition to message_history). This reinforces conversation awareness.
+    user_message = f"{last_response}{deps.get_user_message()}"
 
     # Run the main agent
     trimmed_history = trim_history(
