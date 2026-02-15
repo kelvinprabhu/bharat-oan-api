@@ -1,16 +1,20 @@
 import os
 import re
 import base64
+import logging
 import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 def remove_urls(text):
     return re.sub(r'https?://\S+', '', text)
 
 def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_rate=8000):
     url = 'https://dhruva-api.bhashini.gov.in/services/inference/pipeline'
+    service_id = "tts"
     headers = {
         'Accept': '*/*',
         'Authorization': os.getenv('MEITY_API_KEY_VALUE'),
@@ -24,7 +28,7 @@ def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_ra
                     "language": {
                         "sourceLanguage": source_lang
                     },
-                    "serviceId": "",  
+                    "serviceId": "",
                     "gender": gender,
                     "samplingRate": sampling_rate
                 }
@@ -38,15 +42,48 @@ def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_ra
             ]
         }
     }
-    response = httpx.post(
-        url, 
-        headers=headers, 
-        json=data,
-        timeout=httpx.Timeout(30.0, read=60.0)
-    )
-    assert response.status_code == 200, f"Error: {response.status_code} {response.text}"
-    response_json = response.json()
 
-    audio_content = response_json['pipelineResponse'][0]['audio'][0]['audioContent']
-    audio_data = base64.b64decode(audio_content)
-    return audio_data
+    logger.info(
+        "TTS Bhashini input | target_lang=%s gender=%s sampling_rate=%s text_length=%s",
+        source_lang, gender, sampling_rate, len(text)
+    )
+    curl_redacted = (
+        "curl -X POST '%s' -H 'Authorization: ***' -H 'Content-Type: application/json' "
+        "-d '<payload>'"
+    ) % url
+    logger.info(
+        "TTS Bhashini external API | serviceId=%s curl=%s",
+        service_id, curl_redacted
+    )
+
+    try:
+        response = httpx.post(
+            url,
+            headers=headers,
+            json=data,
+            timeout=httpx.Timeout(30.0, read=60.0)
+        )
+
+        if response.status_code != 200:
+            logger.error(
+                "TTS Bhashini failed | status_code=%s serviceId=%s response=%s",
+                response.status_code, service_id, response.text[:500]
+            )
+            raise RuntimeError(
+                "TTS Bhashini API error: %s %s" % (response.status_code, response.text[:500])
+            )
+
+        response_json = response.json()
+        audio_content = response_json['pipelineResponse'][0]['audio'][0]['audioContent']
+        audio_data = base64.b64decode(audio_content)
+        logger.info(
+            "TTS Bhashini output | target_lang=%s audio_size_bytes=%s",
+            source_lang, len(audio_data)
+        )
+        return audio_data
+    except httpx.HTTPStatusError as e:
+        logger.error(
+            "TTS Bhashini HTTP error | status_code=%s serviceId=%s message=%s",
+            e.response.status_code if e.response else None, service_id, (e.response.text if e.response else str(e))[:500]
+        )
+        raise

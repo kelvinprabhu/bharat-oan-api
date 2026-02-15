@@ -134,15 +134,30 @@ def transcribe_bhashini(audio_base64: str, source_lang: str):
             ]
         }
     }
+
+    logger.info(
+        "Transcribe Bhashini input | source_lang=%s audio_base64_len=%s",
+        source_lang, len(audio_base64)
+    )
+    curl_redacted = (
+        "curl -X POST '%s' -H 'Authorization: ***' -H 'Content-Type: application/json' "
+        "-d '<payload>'"
+    ) % url
+    logger.info(
+        "Transcribe Bhashini external API | serviceId=%s curl=%s",
+        service_id, curl_redacted
+    )
     
     client = get_bhashini_client()
     
     try:
         response = client.post(url, headers=headers, content=json.dumps(data))
         
-        # Log response for debugging
         if response.status_code != 200:
-            logger.error(f"Bhashini API returned {response.status_code}: {response.text}")
+            logger.error(
+                "Transcribe Bhashini failed | status_code=%s serviceId=%s response=%s",
+                response.status_code, service_id, response.text[:500]
+            )
             raise BhashiniAPIError(
                 status_code=response.status_code,
                 message=response.text,
@@ -150,10 +165,18 @@ def transcribe_bhashini(audio_base64: str, source_lang: str):
             )
         
         response_json = response.json()
-        return response_json['pipelineResponse'][0]['output'][0]['source']
+        result = response_json['pipelineResponse'][0]['output'][0]['source']
+        logger.info(
+            "Transcribe Bhashini output | source_lang=%s result_length=%s",
+            source_lang, len(result) if result else 0
+        )
+        return result
         
     except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP Status Error: {e.response.status_code} - {e.response.text}")
+        logger.error(
+            "Transcribe Bhashini HTTP error | status_code=%s serviceId=%s message=%s",
+            e.response.status_code, service_id, (e.response.text or str(e))[:500]
+        )
         raise BhashiniAPIError(
             status_code=e.response.status_code,
             message=str(e),
@@ -181,10 +204,11 @@ def detect_audio_language_bhashini(audio_base64: str):
         'Authorization': os.getenv('MEITY_API_KEY_VALUE'),
         'Content-Type': 'application/json'
     }
+    task_type = "audio-lang-detection"
     data = {
         "pipelineTasks": [
             {
-                "taskType": "audio-lang-detection",
+                "taskType": task_type,
                 "config": {
                     "language": {
                         "sourceLanguage": "auto"
@@ -198,13 +222,29 @@ def detect_audio_language_bhashini(audio_base64: str):
         }
     }
 
+    logger.info(
+        "Detect language Bhashini input | audio_base64_len=%s",
+        len(audio_base64)
+    )
+    curl_redacted = (
+        "curl -X POST '%s' -H 'Authorization: ***' -H 'Content-Type: application/json' "
+        "-d '<payload>'"
+    ) % url
+    logger.info(
+        "Detect language Bhashini external API | taskType=%s curl=%s",
+        task_type, curl_redacted
+    )
+
     client = get_bhashini_client()
     
     try:
         response = client.post(url, headers=headers, content=json.dumps(data))
         
         if response.status_code != 200:
-            logger.error(f"Bhashini API returned {response.status_code}: {response.text}")
+            logger.error(
+                "Detect language Bhashini failed | status_code=%s response=%s",
+                response.status_code, response.text[:500]
+            )
             raise BhashiniAPIError(
                 status_code=response.status_code,
                 message=response.text,
@@ -213,10 +253,18 @@ def detect_audio_language_bhashini(audio_base64: str):
         
         response_json = response.json()
         detected_language_code = response_json['pipelineResponse'][0]['output'][0]['langPrediction'][0]['langCode']
-        return 'en' if detected_language_code == 'en' else 'hi'
+        out_lang = 'en' if detected_language_code == 'en' else 'hi'
+        logger.info(
+            "Detect language Bhashini output | detected_lang=%s",
+            out_lang
+        )
+        return out_lang
         
     except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP Status Error: {e.response.status_code} - {e.response.text}")
+        logger.error(
+            "Detect language Bhashini HTTP error | status_code=%s message=%s",
+            e.response.status_code, (e.response.text or str(e))[:500]
+        )
         raise BhashiniAPIError(
             status_code=e.response.status_code,
             message=str(e),
