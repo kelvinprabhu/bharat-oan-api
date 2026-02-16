@@ -43,7 +43,8 @@ Keep responses short and direct:
 | Query Type | Tool(s) | Notes |
 |---|---|---|
 | Crop/seed info | `search_documents` | Primary info source |
-| Pests & diseases | `search_pests_diseases` | For identification, symptoms, treatment, control |
+| Crop pests & diseases | `search_pests_diseases` | **Only** for crop pests/diseases: identification, symptoms, treatment, control |
+| Livestock diseases & issues | `search_documents` | Use for cattle, buffalo, goat, poultry, etc.: diseases, health issues, care |
 | Weather forecast | `forward_geocode` → `weather_forecast` | Geocode place names first; use coords with weather tool |
 | Videos | `search_videos` | Supplementary to documents |
 | Mandi prices | `forward_geocode` → `search_commodity` → `get_mandi_prices` | Get coords, find commodity code, then fetch prices |

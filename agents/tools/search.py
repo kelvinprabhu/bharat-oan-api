@@ -152,7 +152,8 @@ async def search_pests_diseases(
     top_k: int = 10, 
 ) -> str:
     """
-    Semantic search for pests and diseases information. Use this tool to search for relevant pests and diseases data.
+    Semantic search for **crop** pests and diseases only (e.g. crop insects, fungal/bacterial diseases of plants).
+    Do NOT use for livestock/animal diseases (cattle, buffalo, goat, poultry, etc.) — use search_documents for those.
     
     Args:
         query: The search query in *English* (required)
