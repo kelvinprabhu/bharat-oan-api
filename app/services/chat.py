@@ -84,7 +84,7 @@ async def stream_chat_messages(
     final_result_found = False
 
     async for event in agrinet_agent.run_stream_events(
-        user_prompt=user_message,
+        user_prompt=deps.get_user_message(),
         message_history=trimmed_history,
         deps=deps
     ):
