@@ -373,7 +373,7 @@ class MandiRequest(BaseModel):
                                 },
                                 "time": {
                                     "range": {
-                                        "start": start_date.strftime("%Y-%m-%dT00:00:00.000Z"),
+                                        "start": start_date,
                                         "end": end_date
                                     }
                                 },
