@@ -2,7 +2,8 @@
 
 import os
 import re
-from typing import List, Dict
+import copy
+from typing import List, Dict, Any
 import logging
 import boto3
 from dotenv import load_dotenv
@@ -29,6 +30,21 @@ def get_logger(name):
     logger.setLevel(logging.DEBUG)
     return logger
 
+
+def curl_escape_single_quoted(payload_str: str) -> str:
+    """Escape payload for use inside single-quoted bash -d argument (' -> '\\''). Used by TTS and transcription for runnable curl logs."""
+    return payload_str.replace("'", "'\\''")
+
+
+def payload_for_log(data: Dict[str, Any], audio_content_key: str = "audioContent") -> Dict[str, Any]:
+    """Build a copy of the request payload safe for logging (large base64 replaced by placeholder). Used by transcription; TTS can use for consistency if needed."""
+    out = copy.deepcopy(data)
+    if "inputData" in out and "audio" in out["inputData"]:
+        for item in out["inputData"]["audio"]:
+            if audio_content_key in item and isinstance(item[audio_content_key], str):
+                n = len(item[audio_content_key])
+                item[audio_content_key] = f"<base64 len={n}>"
+    return out
 
 
 def is_sentence_complete(text: str) -> bool:

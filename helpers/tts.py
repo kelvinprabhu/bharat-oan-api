@@ -1,16 +1,20 @@
 import os
 import re
 import base64
-import logging
+import json
 import httpx
 from dotenv import load_dotenv
 
+from helpers.utils import get_logger, curl_escape_single_quoted
+
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
 
 def remove_urls(text):
     return re.sub(r'https?://\S+', '', text)
+
 
 def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_rate=8000):
     url = 'https://dhruva-api.bhashini.gov.in/services/inference/pipeline'
@@ -47,13 +51,18 @@ def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_ra
         "TTS Bhashini input | target_lang=%s gender=%s sampling_rate=%s text_length=%s",
         source_lang, gender, sampling_rate, len(text)
     )
-    curl_redacted = (
-        "curl -X POST '%s' -H 'Authorization: ***' -H 'Content-Type: application/json' "
-        "-d '<payload>'"
-    ) % url
+    logger.info(
+        "TTS Bhashini request payload | serviceId=%s payload=%s",
+        service_id, json.dumps(data, ensure_ascii=False)
+    )
+    payload_str = json.dumps(data, ensure_ascii=False)
+    payload_escaped = curl_escape_single_quoted(payload_str)
+    curl = (
+        "curl -X POST '%s' -H 'Authorization: <MEITY_API_KEY_VALUE>' -H 'Content-Type: application/json' -d '%s'"
+    ) % (url, payload_escaped)
     logger.info(
         "TTS Bhashini external API | serviceId=%s curl=%s",
-        service_id, curl_redacted
+        service_id, curl
     )
 
     try:
@@ -66,8 +75,8 @@ def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_ra
 
         if response.status_code != 200:
             logger.error(
-                "TTS Bhashini failed | status_code=%s serviceId=%s response=%s",
-                response.status_code, service_id, response.text[:500]
+                "TTS Bhashini failed | status_code=%s serviceId=%s response=%s curl=%s",
+                response.status_code, service_id, response.text[:500], curl
             )
             raise RuntimeError(
                 "TTS Bhashini API error: %s %s" % (response.status_code, response.text[:500])
@@ -83,7 +92,14 @@ def text_to_speech_bhashini(text, source_lang='hi', gender='female', sampling_ra
         return audio_data
     except httpx.HTTPStatusError as e:
         logger.error(
-            "TTS Bhashini HTTP error | status_code=%s serviceId=%s message=%s",
-            e.response.status_code if e.response else None, service_id, (e.response.text if e.response else str(e))[:500]
+            "TTS Bhashini HTTP error | status_code=%s serviceId=%s message=%s curl=%s",
+            e.response.status_code if e.response else None, service_id,
+            (e.response.text if e.response else str(e))[:500], curl
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            "TTS Bhashini error | serviceId=%s error=%s message=%s curl=%s",
+            service_id, type(e).__name__, str(e)[:1000], curl
         )
         raise
