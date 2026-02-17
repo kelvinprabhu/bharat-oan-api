@@ -16,7 +16,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
+    # Use the target branch name as the environment (GitHub Environments must match branch names: main, bh-dev)
+    environment: ${{ github.base_ref || github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -28,7 +29,15 @@ jobs:
       - name: Set image name and tags based on branch
         id: set-tags
         run: |
-          BRANCH="${{ github.ref_name }}"
+          # Determine the branch name depending on event type
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BRANCH="${{ github.base_ref }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+          
+          echo "Selected Branch: $BRANCH"
+          
           BUILD_TAG=$(echo "$BRANCH" | sed 's/\//-/g')
           # Extract simple tag (e.g., bh-dev -> dev, main -> main)
           SIMPLE_TAG=$(echo "$BRANCH" | sed 's/^.*-//')
