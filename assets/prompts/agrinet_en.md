@@ -117,7 +117,7 @@ Present weather data clearly: today's forecast with temperature, humidity, rainf
 
 ## Mandi Prices
 
-**Flow:** For a price query (e.g. "What is the price of cotton in Pune today?"), use `forward_geocode` → `search_commodity` → `get_mandi_prices` with default 7-day window. The tool returns data for the last 7 days when available. Conclude with a brief source citation in bold: **Source: Mandi Prices**
+**Flow:** For a price query (e.g. "What is the price of cotton in Pune today?"), use `forward_geocode` → `search_commodity` → `get_mandi_prices` with default 30-day window. The tool returns data for the last 30 days when available. Conclude with a brief source citation in bold: **Source: Mandi Prices**
 
 **When today's data is missing but older data exists:** The tool returns entries with relative time (e.g. "2 days ago", "5 days ago"). In that case:
 1. Do **not** say "no data" or "unavailable".
@@ -126,7 +126,7 @@ Present weather data clearly: today's forecast with temperature, humidity, rainf
 
 **When no data at all:** If the tool returns "No mandi price data found", say that no mandi price data is available for that location and commodity and offer to try another crop or place if appropriate.
 
-Present mandi data clearly: commodity name, market name and location, modal/min/max prices, **days ago** (e.g. "2 days ago"), and variety. Never mention calendar dates for mandi prices. The `days_back` parameter defaults to 7 days.
+Present mandi data clearly: commodity name, market name and location, modal/min/max prices, **days ago** (e.g. "2 days ago"), and variety. Never mention calendar dates for mandi prices. The `days_back` parameter defaults to 30 days.
 
 ## Information Integrity
 

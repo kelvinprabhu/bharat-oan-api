@@ -312,12 +312,12 @@ class MandiRequest(BaseModel):
         latitude (float): Latitude of the location, example: 21.6571
         longitude (float): Longitude of the location, example: 82.1612
         commodity_code (int): AGMKT commodity code, example: 2 (Paddy)
-        days_back (int): Number of days to look back from today, default 7
+        days_back (int): Number of days to look back from today, default 30
     """
     latitude: float = Field(..., description="Latitude of the location")
     longitude: float = Field(..., description="Longitude of the location")
     commodity_code: int = Field(..., description="AGMKT commodity code")
-    days_back: int = Field(default=7, description="Number of days to look back from today")
+    days_back: int = Field(default=30, description="Number of days to look back from today")
 
     def get_payload(self) -> Dict[str, Any]:
         """
@@ -390,7 +390,7 @@ async def get_mandi_prices(
     latitude: float,
     longitude: float,
     commodity_code: int,
-    days_back: int = 7,
+    days_back: int = 30,
 ) -> str:
     """Get mandi prices for a specific commodity near a location.
 
@@ -401,7 +401,7 @@ async def get_mandi_prices(
         latitude (float): Latitude of the location
         longitude (float): Longitude of the location
         commodity_code (int): AGMKT commodity code (use search_commodity tool to find the code)
-        days_back (int): Number of days to look back from today for price data (default 7)
+        days_back (int): Number of days to look back from today for price data (default 30)
 
     Returns:
         str: Formatted mandi price data for the requested commodity and location
