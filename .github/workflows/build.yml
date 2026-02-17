@@ -16,7 +16,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -30,9 +29,12 @@ jobs:
         run: |
           BRANCH="${{ github.ref_name }}"
           BUILD_TAG=$(echo "$BRANCH" | sed 's/\//-/g')
+          # Extract simple tag (e.g., bh-dev -> dev, main -> main)
+          SIMPLE_TAG=$(echo "$BRANCH" | sed 's/^.*-//')
 
           echo "IMAGE_NAME=${{ env.BASE_IMAGE_NAME }}" >> $GITHUB_OUTPUT
           echo "BUILD_TAG=${BUILD_TAG}" >> $GITHUB_OUTPUT
+          echo "SIMPLE_TAG=${SIMPLE_TAG}" >> $GITHUB_OUTPUT
           echo "LATEST_TAG=${BUILD_TAG}-latest" >> $GITHUB_OUTPUT
 
       - name: Authenticate to Google Cloud
@@ -56,6 +58,7 @@ jobs:
           tags: |
             ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ steps.set-tags.outputs.LATEST_TAG }}
             ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ steps.set-tags.outputs.BUILD_TAG }}
+            ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ steps.set-tags.outputs.SIMPLE_TAG }}
             ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ github.sha }}
           platforms: linux/amd64
           cache-from: type=gha
@@ -66,4 +69,5 @@ jobs:
         run: |
           docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ steps.set-tags.outputs.LATEST_TAG }}
           docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ steps.set-tags.outputs.BUILD_TAG }}
+          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ steps.set-tags.outputs.SIMPLE_TAG }}
           docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ steps.set-tags.outputs.IMAGE_NAME }}:${{ github.sha }}
