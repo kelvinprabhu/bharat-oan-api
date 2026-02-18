@@ -184,6 +184,8 @@ class SchemeRequest(BaseModel):
              - "sathi": SATHI Seed Authentication, Traceability & Holistic Inventory
              - "pmasha": Pradhan Mantri Annadata Aay Sanrakshan Abhiyan
              - "aif": Agriculture Infrastructure Fund
+             - "smam": Sub-Mission on Agricultural Mechanization
+             - "pdmc": Per Drop More Crop scheme
     """
     scheme_name: str
     
@@ -234,7 +236,7 @@ class SchemeRequest(BaseModel):
             }
         }
 
-def get_scheme_info(scheme_name: Literal["kcc", "pmkisan", "pmfby", "shc", "pmksy", "sathi", "pmasha", "aif"]) -> str:
+def get_scheme_info(scheme_name: Literal["kcc", "pmkisan", "pmfby", "shc", "pmksy", "sathi", "pmasha", "aif", "smam", "pdmc"]) -> str:
     """Retrieve detailed information about government agricultural schemes.
     
     This tool fetches comprehensive scheme data including benefits, eligibility criteria, 
@@ -251,6 +253,8 @@ def get_scheme_info(scheme_name: Literal["kcc", "pmkisan", "pmfby", "shc", "pmks
             - "sathi": Seed Authentication, Traceability & Holistic Inventory
             - "pmasha": Pradhan Mantri Annadata Aay Sanrakshan Abhiyan
             - "aif": Agriculture Infrastructure Fund
+            - "smam": Sub-Mission on Agricultural Mechanization
+            - "pdmc": Per Drop More Crop scheme
 
     Returns:
         str: Formatted scheme data including introduction, benefits, eligibility, 
