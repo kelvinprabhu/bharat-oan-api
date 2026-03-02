@@ -50,6 +50,10 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# Application Defaults
+ENV JWT_PUBLIC_KEY_PATH="keys/jwt_public_key.pem" \
+    JWT_PRIVATE_KEY_PATH="keys/jwt_private_key.pem"
+
 # Build Arguments
 ARG LLM_PROVIDER
 ARG LLM_MODEL_NAME
