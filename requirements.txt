@@ -32,7 +32,7 @@ python-decouple
 openpyxl
 
 ### Pydantic AI (Updated to resolve conflicts)
-pydantic-ai==1.2.1
+pydantic-ai>=1.2.5
 asgiref
 
 # Web Server

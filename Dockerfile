@@ -1,43 +1,90 @@
-# Use Python as the base image
-FROM python:3.11-slim
+# =========================
+# Stage 1: Builder
+# =========================
+FROM python:3.11-slim AS builder
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    supervisor \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
-    curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better Docker layer caching
 COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Add pip index
-RUN pip config set global.index-url https://pypi.org/simple
 
-# Install Python dependencies
-RUN python3 -m pip install --upgrade pip && python3 -m pip install --upgrade setuptools && python3 -m pip install --upgrade wheel
-RUN python3 -m pip install --no-cache-dir -r requirements.txt
+# =========================
+# Stage 2: Runtime
+# =========================
+FROM python:3.11-slim
 
-# Copy application code
+LABEL org.opencontainers.image.title="Bharat-OAN API" \
+    org.opencontainers.image.source="https://github.com/OpenAgriNet/bharat-oan-api" \
+    org.opencontainers.image.description="BharatVistaar AI API – Agricultural Voice Assistant"
+
+WORKDIR /app
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    supervisor \
+    curl \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed Python packages from builder
+COPY --from=builder /install /usr/local
+
+# Copy application
 COPY . .
 
-# Create logs directory for supervisord
-RUN mkdir -p /app/logs
+# Create logs and keys directories
+RUN mkdir -p /app/logs /app/keys
 
 # Copy supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Create non-root user for security (optional)
-# RUN useradd --create-home --shell /bin/bash app
-# RUN chown -R app:app /app
-# USER app
+# Set production-safe Python env
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Expose FastAPI port
+# Build Arguments
+ARG LLM_PROVIDER
+ARG LLM_MODEL_NAME
+ARG GEMINI_API_KEY
+ARG MAPBOX_API_TOKEN
+ARG ENVIRONMENT
+ARG LOGFIRE_TOKEN
+ARG TELEMETRY_API_URL
+
+# Set Environment Variables from Build Args
+ENV LLM_PROVIDER=${LLM_PROVIDER} \
+    LLM_MODEL_NAME=${LLM_MODEL_NAME} \
+    GEMINI_API_KEY=${GEMINI_API_KEY} \
+    MAPBOX_API_TOKEN=${MAPBOX_API_TOKEN} \
+    ENVIRONMENT=${ENVIRONMENT} \
+    LOGFIRE_TOKEN=${LOGFIRE_TOKEN} \
+    TELEMETRY_API_URL=${TELEMETRY_API_URL}
+
+# BAP Configuration
+ARG BAP_ID
+ARG BAP_URI
+ARG BAP_ENDPOINT
+
+ENV BAP_ID=${BAP_ID} \
+    BAP_URI=${BAP_URI} \
+    BAP_ENDPOINT=${BAP_ENDPOINT}
+
 EXPOSE 8000
 
-# Start supervisor to manage both FastAPI and Celery
+# Fix line endings and make entrypoint executable
+RUN chmod +x /app/scripts/entrypoint.sh && \
+    sed -i 's/\r$//' /app/scripts/entrypoint.sh
+
+# Set entrypoint to the correct script
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+
+# Default command that will be passed to entrypoint
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

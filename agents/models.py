@@ -1,6 +1,8 @@
 import os
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.models.gemini import GeminiModel
+from pydantic_ai.providers.google_gla import GoogleGLAProvider
 from dotenv import load_dotenv
 from openai import AsyncAzureOpenAI
 
@@ -17,6 +19,13 @@ if LLM_PROVIDER == 'vllm':
         provider=OpenAIProvider(
             base_url=os.getenv('INFERENCE_ENDPOINT_URL'), 
             api_key=os.getenv('INFERENCE_API_KEY'),  
+        ),
+    )
+elif LLM_PROVIDER == 'gemini':
+    LLM_MODEL = GeminiModel(
+        LLM_MODEL_NAME,
+        provider=GoogleGLAProvider(
+            api_key=os.getenv('GEMINI_API_KEY'),
         ),
     )
 elif LLM_PROVIDER == 'openai':

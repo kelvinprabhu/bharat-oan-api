@@ -14,7 +14,8 @@ router = APIRouter(prefix="/token", tags=["token"])
 
 # Load private key for JWT signing
 private_key = None
-private_key_path = settings.base_dir / "private_key.pem"
+jwt_key_path = settings.jwt_private_key_path or "private_key.pem"
+private_key_path = settings.base_dir / jwt_key_path
 if os.path.exists(private_key_path):
     try:
         with open(private_key_path, 'rb') as key_file:
