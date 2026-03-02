@@ -47,6 +47,7 @@ jobs:
             --build-arg ENVIRONMENT=${{ vars.ENVIRONMENT }} \
             --build-arg LOGFIRE_TOKEN=${{ secrets.LOGFIRE_TOKEN }} \
             --build-arg TELEMETRY_API_URL=${{ vars.TELEMETRY_API_URL }} \
+            --build-arg BAP_ENDPOINT=${{ vars.BAP_ENDPOINT }} \
             -t $IMAGE_URI:$SERVICE_NAME .
           docker tag $IMAGE_URI:$SERVICE_NAME $IMAGE_URI:$SERVICE_NAME-latest
           docker push $IMAGE_URI:$SERVICE_NAME
