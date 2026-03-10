@@ -13,13 +13,13 @@ from datetime import datetime
 import simplejson as json
 from jinja2 import Environment, FileSystemLoader
 import pytz
-
+from app.config import Settings
 load_dotenv()
 
 
 def get_today_date_str() -> str:
     """Get today's date as a string in the format Monday, 23rd May 2025."""
-    ist = pytz.timezone('Asia/Kolkata')
+    ist = pytz.timezone(Settings.timezone)
     today = datetime.now(ist)
     return today.strftime('%A, %d %B %Y')
 

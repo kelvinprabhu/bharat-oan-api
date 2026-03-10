@@ -1,7 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from langcodes import Language
-
+from app.config import Settings
 
 class FarmerContext(BaseModel):
     """Context for the farmer agent.
@@ -19,7 +19,7 @@ class FarmerContext(BaseModel):
         **Moderation Compliance:** "Valid Agricultural (This is a valid agricultural question.)"
     """
     query: str = Field(description="The user's question.")
-    lang_code: str = Field(description="The language code of the user's question.", default='hi')
+    lang_code: str = Field(description="The language code of the user's question.", default=settings.default_language)
     session_id: str = Field(description="The session ID for the conversation.")
     moderation_str: Optional[str] = Field(default=None, description="The moderation result of the user's question.")
 

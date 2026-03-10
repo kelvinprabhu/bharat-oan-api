@@ -11,12 +11,13 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # Core Application Settings
-    app_name: str = "Bharatvistaar AI API"
+    app_name: str = "OAN-Namibia AI API"
     environment: str = os.getenv("ENVIRONMENT", "production")
     debug: bool = False
     base_dir: Path = Path(__file__).resolve().parent.parent
     secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    timezone: str = "Asia/Kolkata"
+    timezone: str = "Africa/Lusaka"
+    default_language: str = "en"
 
     # Server Configuration
     host: str = "0.0.0.0"
