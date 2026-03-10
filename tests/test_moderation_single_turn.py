@@ -35,7 +35,7 @@ from langcodes import Language
 QUESTIONS_PATH = ROOT / "tests" / "fixtures" / "moderation_single_turn.json"
 
 # Map fixture language keys to lang codes for langcodes library
-LANG_CODE_MAP = {"en": "en", "hi": "hi", "hinglish": "hi"}
+LANG_CODE_MAP = {"en": "en", "ow": "ow"}
 
 
 def format_user_message(item: dict) -> str:

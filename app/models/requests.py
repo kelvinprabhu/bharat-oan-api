@@ -1,12 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
-from app.config import Settings
+
 
 class ChatRequest(BaseModel):
     query: str = Field(..., description="The user's chat query")
     session_id: Optional[str] = Field(None, description="Session ID for maintaining conversation context")
-    source_lang: str = Field(Settings.default_language, description="Source language code")
-    target_lang: str = Field(Settings.default_language, description="Target language code")
+    source_lang: str = Field("en", description="Source language code. Supported: 'en', 'bem', 'nya'")
+    target_lang: str = Field("en", description="Target language code. Supported: 'en', 'bem', 'nya'")
     user_id: str = Field('anonymous', description="User identifier")
 
 class TranscribeRequest(BaseModel):
@@ -22,7 +22,7 @@ class SuggestionsRequest(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str = Field(..., description="Text to convert to speech")
-    target_lang: str = Field(Settings.default_language, description="Language code for TTS")
+    target_lang: str = Field("en", description="Language code for TTS. Supported: 'en', 'bem', 'nya'")
     session_id: Optional[str] = Field(None, description="Session ID")
     service_type: Literal['bhashini', 'eleven_labs'] = Field('bhashini', description="TTS service to use")
     qid: Optional[str] = Field(None, description="Question ID") 

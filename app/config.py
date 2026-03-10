@@ -11,13 +11,17 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # Core Application Settings
-    app_name: str = "OAN-Namibia AI API"
+    app_name: str = "OAN-Zambia AI API"
     environment: str = os.getenv("ENVIRONMENT", "production")
     debug: bool = False
     base_dir: Path = Path(__file__).resolve().parent.parent
     secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    timezone: str = "Africa/Lusaka"
-    default_language: str = "en"
+    timezone: str = os.getenv("TIMEZONE", "Africa/Lusaka")
+    default_language: str = os.getenv("DEFAULT_LANGUAGE", "en")
+    supported_languages: str = "en,bem,nya"
+    moderation_agent_name: str = os.getenv("MODERATION_AGENT_NAME", "content-moderation-agent")
+    agrinet_agent_name: str = os.getenv("AGRINET_AGENT_NAME", "agrinet-agent")
+    suggestions_agent_name: str = os.getenv("SUGGESTIONS_AGENT_NAME", "suggestions-agent")
 
     # Server Configuration
     host: str = "0.0.0.0"
@@ -26,7 +30,7 @@ class Settings(BaseSettings):
     rate_limit_requests_per_minute: int = 1000
 
     # Security Settings
-    allowed_origins: List[str] = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+    allowed_origins: str = "*"
     allowed_credentials: bool = True
     allowed_methods: List[str] = ["*"]
     allowed_headers: List[str] = ["*"]
@@ -40,14 +44,21 @@ class Settings(BaseSettings):
     uvicorn_workers: int = os.cpu_count() or 1
 
     # Redis Settings
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-    redis_key_prefix: str = "sva-cache-"
-    redis_socket_connect_timeout: int = 10
-    redis_socket_timeout: int = 10
-    redis_max_connections: int = 100
-    redis_retry_on_timeout: bool = True
+    redis_host: str = os.getenv("REDIS_HOST", "localhost")
+    redis_port: int = int(os.getenv("REDIS_PORT", 6379))
+    redis_db: int = int(os.getenv("REDIS_DB", 0))
+    redis_key_prefix: str = os.getenv("REDIS_KEY_PREFIX", "sva-cache-")
+    redis_socket_connect_timeout: int = int(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", 10))
+    redis_socket_timeout: int = int(os.getenv("REDIS_SOCKET_TIMEOUT", 10))
+    redis_max_connections: int = int(os.getenv("REDIS_MAX_CONNECTIONS", 100))
+    redis_retry_on_timeout: bool = os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true"
+
+    def model_post_init(self, __context):
+        """Convert comma-separated string fields to lists after init."""
+        object.__setattr__(self, 'supported_languages',
+                           [s.strip() for s in self.supported_languages.split(",")])
+        object.__setattr__(self, 'allowed_origins',
+                           [o.strip() for o in self.allowed_origins.split(",")])
 
     # Cache Configuration
     default_cache_ttl: int = 60 * 60 * 24  # 24 hours

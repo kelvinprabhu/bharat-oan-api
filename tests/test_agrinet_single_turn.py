@@ -38,7 +38,7 @@ from langcodes import Language
 
 QUESTIONS_PATH = ROOT / "tests" / "fixtures" / "agrinet_single_turn.json"
 
-LANG_CODE_MAP = {"en": "en", "hi": "hi"}
+LANG_CODE_MAP = {"en": "en", "bem": "bem", "nya": "nya"}
 
 # ANSI colors
 OK   = "\033[92m OK \033[0m"

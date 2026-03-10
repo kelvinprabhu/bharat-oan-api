@@ -5,7 +5,7 @@ from helpers.utils import get_prompt
 from dotenv import load_dotenv
 from pydantic_ai.models import ModelSettings
 from agents.models import LLM_MODEL
-
+from app.config import settings
 # TODO: Add tools from tools/scheme.py
 load_dotenv()
 
@@ -28,7 +28,7 @@ class QueryModerationResult(BaseModel):
 
 moderation_agent = Agent(
     model=LLM_MODEL,
-    name="Moderation Agent",
+    name=settings.moderation_agent_name,
     system_prompt=get_prompt('moderation_system'),
     instrument=True,
     output_type=QueryModerationResult,

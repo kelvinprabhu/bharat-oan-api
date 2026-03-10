@@ -4,10 +4,11 @@ from typing import List
 from helpers.utils import get_prompt
 from dotenv import load_dotenv
 from agents.models import LLM_AGRINET_MODEL
+from app.config import settings
 load_dotenv()
 
 suggestions_agent = Agent(
-    name="Suggestions Agent",
+    name=settings.suggestions_agent_name,
     model=LLM_AGRINET_MODEL,
     instructions=get_prompt('suggestions_system'),
     instrument=False,
