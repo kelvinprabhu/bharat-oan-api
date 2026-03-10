@@ -2,14 +2,14 @@ name: AWS - ECR Push
 
 on:
   push:
-    branches: [main]
+    branches: [main,zambia-version]
   workflow_dispatch:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REPOSITORY: zambia-oan
   IMAGE_TAG: ${{ github.sha }}
-  SERVICE_NAME: bharat-oan-api-LLM
+  SERVICE_NAME: zambia-oan-api-LLM
 
 jobs:
   build-and-push:
